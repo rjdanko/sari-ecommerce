@@ -1,0 +1,23 @@
+# Environment and Runtime
+.env
+.env.*
+.tmp/
+
+# Python defaults for execution dir
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+.pytest_cache/
+
+# Google Auth
+credentials.json
+token.json
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
