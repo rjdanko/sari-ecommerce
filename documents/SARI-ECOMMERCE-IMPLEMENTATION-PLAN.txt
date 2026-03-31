@@ -1,0 +1,3666 @@
+================================================================================
+SARI E-COMMERCE — FULL IMPLEMENTATION PLAN
+================================================================================
+
+> **For agentic workers:** REQUIRED: Implement this plan task-by-task.
+> Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Build a complete, production-ready e-commerce platform ("SARI") with
+role-based authentication, inventory management, GCash/Card payments via
+PayMongo, AI-powered search via Typesense, and smart product recommendations.
+
+**Architecture:** Decoupled monolith — Laravel API backend serves a Next.js SPA
+frontend. Laravel handles all business logic, auth (Sanctum), queue processing
+(RabbitMQ), caching (Redis), payments (PayMongo), and search indexing
+(Typesense). Next.js handles rendering, routing, and user interactions.
+Supabase provides managed PostgreSQL + object storage for product images.
+
+**Tech Stack:**
+- Back-End:      PHP 8.2+ / Laravel 12 (API-only via Breeze)
+- Front-End:     Next.js 15 (App Router) / TypeScript / Tailwind CSS v4
+- Database:      PostgreSQL via Supabase (managed)
+- Auth:          Laravel Sanctum (cookie-based SPA auth)
+- RBAC:          Spatie laravel-permission (User / Business / Admin roles)
+- Payments:      PayMongo Checkout API (GCash, Visa, Mastercard)
+- Search:        Typesense via Laravel Scout
+- Caching:       Redis (sessions, cart, general cache)
+- Queues:        RabbitMQ via vladimir-yuldashev/laravel-queue-rabbitmq
+- Recommendations: Recombee PHP SDK (optional, AI-powered)
+- Storage:       Supabase Storage (S3-compatible, CDN-backed)
+- Admin Panel:   Filament PHP (for internal admin/business dashboards)
+
+================================================================================
+DESIGN REFERENCE
+================================================================================
+
+The design follows a clean, modern e-commerce aesthetic with the SARI brand
+identity. Key design tokens:
+
+Brand Colors:
+- Primary:       #F59E0B (Amber/Orange — used for CTAs, badges, accents)
+- Primary Hover:  #D97706
+- Background:    #FFFFFF (light mode), #111827 (dark mode)
+- Text Primary:  #111827
+- Text Secondary: #6B7280
+- Border:        #E5E7EB
+- Card BG:       #F9FAFB
+
+Typography:
+- Font Family:   "Inter" from Google Fonts (import in layout)
+- Headings:      font-bold, tracking-tight
+- Body:          font-normal, text-gray-600
+
+Layout Reference (see documents/design-references/ for screenshots):
+- Navbar: Logo "SARI" left, nav links (Home, Men, Women, All Products) center,
+  search bar center-right, heart icon + cart icon + Login button right.
+  Login button is amber/orange rounded pill.
+- Hero: Full-width amber/orange gradient background with "NEW COLLECTION" badge,
+  large heading "Discover Your Perfect Style", subtitle about AI recommendations,
+  two CTA buttons: "Shop Now" (dark) and "Try AI Comparison" (orange outline).
+- Shop by Category: Grid of 4 category cards with images.
+- Login Page: Centered card with SARI logo, "Welcome Back" heading,
+  email + password fields, amber Login button, "Sign up" link below.
+  Same navbar as homepage.
+
+================================================================================
+DIRECTORY STRUCTURE (MONOREPO)
+================================================================================
+
+sari-ecommerce/
+├── backend/                          # Laravel 12 API
+│   ├── app/
+│   │   ├── Enums/
+│   │   │   └── RoleEnum.php          # User, Business, Admin enum
+│   │   ├── Http/
+│   │   │   ├── Controllers/
+│   │   │   │   ├── Auth/
+│   │   │   │   │   ├── LoginController.php
+│   │   │   │   │   ├── RegisterController.php
+│   │   │   │   │   └── LogoutController.php
+│   │   │   │   ├── ProductController.php
+│   │   │   │   ├── CategoryController.php
+│   │   │   │   ├── CartController.php
+│   │   │   │   ├── OrderController.php
+│   │   │   │   ├── CheckoutController.php
+│   │   │   │   ├── WebhookController.php
+│   │   │   │   ├── SearchController.php
+│   │   │   │   ├── RecommendationController.php
+│   │   │   │   ├── WishlistController.php
+│   │   │   │   └── Admin/
+│   │   │   │       ├── UserController.php
+│   │   │   │       ├── InventoryController.php
+│   │   │   │       └── DashboardController.php
+│   │   │   ├── Middleware/
+│   │   │   │   └── EnsureRole.php     # Custom role-check middleware
+│   │   │   ├── Requests/
+│   │   │   │   ├── StoreProductRequest.php
+│   │   │   │   ├── LoginRequest.php
+│   │   │   │   └── RegisterRequest.php
+│   │   │   └── Resources/
+│   │   │       ├── ProductResource.php
+│   │   │       ├── CategoryResource.php
+│   │   │       ├── OrderResource.php
+│   │   │       └── UserResource.php
+│   │   ├── Jobs/
+│   │   │   ├── ProcessPaymentWebhook.php
+│   │   │   ├── SyncProductToTypesense.php
+│   │   │   ├── SyncInteractionToRecombee.php
+│   │   │   └── ProcessImageUpload.php
+│   │   ├── Models/
+│   │   │   ├── User.php
+│   │   │   ├── Product.php
+│   │   │   ├── ProductVariant.php
+│   │   │   ├── Category.php
+│   │   │   ├── Order.php
+│   │   │   ├── OrderItem.php
+│   │   │   ├── ProductImage.php
+│   │   │   ├── Wishlist.php
+│   │   │   └── SearchHistory.php
+│   │   └── Services/
+│   │       ├── CartService.php        # Redis-backed cart logic
+│   │       ├── PaymentService.php     # PayMongo abstraction
+│   │       ├── RecommendationService.php  # Recombee wrapper
+│   │       ├── SearchService.php      # Typesense wrapper
+│   │       └── ImageService.php       # Supabase Storage wrapper
+│   ├── config/
+│   │   ├── cors.php
+│   │   ├── sanctum.php
+│   │   ├── queue.php                  # RabbitMQ connection
+│   │   ├── scout.php                  # Typesense driver
+│   │   ├── filesystems.php            # Supabase S3 disk
+│   │   └── services.php              # PayMongo, Recombee keys
+│   ├── database/
+│   │   ├── migrations/
+│   │   │   ├── 0001_create_users_table.php
+│   │   │   ├── 0002_create_categories_table.php
+│   │   │   ├── 0003_create_products_table.php
+│   │   │   ├── 0004_create_product_variants_table.php
+│   │   │   ├── 0005_create_product_images_table.php
+│   │   │   ├── 0006_create_orders_table.php
+│   │   │   ├── 0007_create_order_items_table.php
+│   │   │   ├── 0008_create_wishlists_table.php
+│   │   │   ├── 0009_create_search_histories_table.php
+│   │   │   └── 0010_create_permission_tables.php  (Spatie auto)
+│   │   └── seeders/
+│   │       ├── RoleSeeder.php
+│   │       ├── AdminSeeder.php
+│   │       └── CategorySeeder.php
+│   ├── routes/
+│   │   └── api.php                    # All API routes
+│   └── .env.example
+│
+├── frontend/                          # Next.js 15 App
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── layout.tsx             # Root layout (Inter font, Providers)
+│   │   │   ├── page.tsx               # Homepage (hero, categories, recs)
+│   │   │   ├── (auth)/
+│   │   │   │   ├── login/page.tsx
+│   │   │   │   └── register/page.tsx
+│   │   │   ├── (shop)/
+│   │   │   │   ├── products/page.tsx          # Product listing + search
+│   │   │   │   ├── products/[slug]/page.tsx   # Product detail
+│   │   │   │   ├── categories/[slug]/page.tsx # Category view
+│   │   │   │   ├── cart/page.tsx
+│   │   │   │   └── checkout/page.tsx
+│   │   │   ├── (user)/
+│   │   │   │   ├── profile/page.tsx
+│   │   │   │   ├── orders/page.tsx
+│   │   │   │   └── wishlist/page.tsx
+│   │   │   ├── (business)/
+│   │   │   │   ├── dashboard/page.tsx
+│   │   │   │   ├── products/page.tsx
+│   │   │   │   └── orders/page.tsx
+│   │   │   └── (admin)/
+│   │   │       ├── dashboard/page.tsx
+│   │   │       ├── users/page.tsx
+│   │   │       └── inventory/page.tsx
+│   │   ├── components/
+│   │   │   ├── ui/                    # Atomic components
+│   │   │   │   ├── Button.tsx
+│   │   │   │   ├── Input.tsx
+│   │   │   │   ├── Badge.tsx
+│   │   │   │   ├── Card.tsx
+│   │   │   │   └── Modal.tsx
+│   │   │   ├── layout/
+│   │   │   │   ├── Navbar.tsx
+│   │   │   │   ├── Footer.tsx
+│   │   │   │   └── Sidebar.tsx
+│   │   │   ├── products/
+│   │   │   │   ├── ProductCard.tsx
+│   │   │   │   ├── ProductGrid.tsx
+│   │   │   │   └── ProductImageGallery.tsx
+│   │   │   ├── search/
+│   │   │   │   ├── SearchBar.tsx
+│   │   │   │   └── SearchResults.tsx
+│   │   │   └── cart/
+│   │   │       ├── CartItem.tsx
+│   │   │       └── CartSummary.tsx
+│   │   ├── hooks/
+│   │   │   ├── useAuth.ts
+│   │   │   ├── useCart.ts
+│   │   │   └── useSearch.ts
+│   │   ├── lib/
+│   │   │   ├── api.ts                 # Axios instance (withCredentials)
+│   │   │   ├── typesense.ts           # Typesense JS client
+│   │   │   └── utils.ts
+│   │   ├── services/
+│   │   │   ├── authService.ts
+│   │   │   ├── productService.ts
+│   │   │   ├── cartService.ts
+│   │   │   └── orderService.ts
+│   │   └── types/
+│   │       ├── product.ts
+│   │       ├── user.ts
+│   │       ├── order.ts
+│   │       └── cart.ts
+│   ├── public/
+│   │   └── images/
+│   ├── tailwind.config.ts
+│   ├── next.config.ts
+│   └── .env.local.example
+│
+├── docker-compose.yml                 # Redis + RabbitMQ + Typesense
+├── documents/
+│   ├── SARI-ECOMMERCE-IMPLEMENTATION-PLAN.txt   # This file
+│   └── design-references/            # Screenshot references
+└── .gitignore
+
+
+================================================================================
+PHASE 0 — PROJECT SCAFFOLDING
+================================================================================
+
+### Task 0.1: Initialize Laravel Backend
+
+- [ ] **Step 1: Create Laravel project**
+
+Run from the sari-ecommerce root:
+```bash
+composer create-project laravel/laravel backend
+```
+
+- [ ] **Step 2: Install all backend dependencies**
+
+```bash
+cd backend
+composer require laravel/sanctum
+composer require spatie/laravel-permission
+composer require vladimir-yuldashev/laravel-queue-rabbitmq
+composer require laravel/scout
+composer require typesense/laravel-scout-typesense-driver
+composer require league/flysystem-aws-s3-v3 "^3.0"
+composer require recombee/php-api-client
+composer require predis/predis
+```
+
+- [ ] **Step 3: Install Breeze API scaffolding**
+
+```bash
+php artisan breeze:install api
+```
+This sets up Sanctum auth routes (login, register, logout, password reset),
+CORS config, and the EnsureFrontendRequestsAreStateful middleware.
+
+- [ ] **Step 4: Publish Spatie permission config and migration**
+
+```bash
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+```
+
+- [ ] **Step 5: Publish RabbitMQ config**
+
+```bash
+php artisan vendor:publish --provider="VladimirYuldashev\LaravelQueueRabbitMQ\LaravelQueueRabbitMQServiceProvider"
+```
+
+- [ ] **Step 6: Create .env from .env.example and set initial values**
+
+```env
+APP_NAME=SARI
+APP_URL=http://localhost:8000
+FRONTEND_URL=http://localhost:3000
+
+DB_CONNECTION=pgsql
+DB_HOST=your-project.supabase.co
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USERNAME=postgres
+DB_PASSWORD=your-supabase-password
+
+SANCTUM_STATEFUL_DOMAINS=localhost:3000,127.0.0.1:3000
+SESSION_DRIVER=redis
+CACHE_STORE=redis
+QUEUE_CONNECTION=rabbitmq
+
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=null
+REDIS_DB=0
+REDIS_CACHE_DB=1
+
+RABBITMQ_HOST=127.0.0.1
+RABBITMQ_PORT=5672
+RABBITMQ_USER=guest
+RABBITMQ_PASSWORD=guest
+RABBITMQ_VHOST=/
+RABBITMQ_QUEUE=default
+
+SCOUT_DRIVER=typesense
+TYPESENSE_API_KEY=your-typesense-key
+TYPESENSE_HOST=localhost
+TYPESENSE_PORT=8108
+TYPESENSE_PROTOCOL=http
+
+PAYMONGO_PUBLIC_KEY=pk_test_xxxxxxxxxxxx
+PAYMONGO_SECRET_KEY=sk_test_xxxxxxxxxxxx
+
+RECOMBEE_DATABASE_ID=your-db-id
+RECOMBEE_PRIVATE_TOKEN=your-private-token
+RECOMBEE_REGION=ap-se
+
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ACCESS_KEY=your-access-key
+SUPABASE_SECRET_KEY=your-secret-key
+SUPABASE_BUCKET_NAME=product-images
+SUPABASE_REGION=ap-southeast-1
+SUPABASE_ENDPOINT=https://your-project.supabase.co/storage/v1/s3
+```
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add .
+git commit -m "chore: scaffold Laravel backend with all dependencies"
+```
+
+--------------------------------------------------------------------------------
+
+### Task 0.2: Initialize Next.js Frontend
+
+- [ ] **Step 1: Create Next.js project**
+
+Run from the sari-ecommerce root:
+```bash
+npx -y create-next-app@latest frontend --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --use-npm
+```
+
+- [ ] **Step 2: Install frontend dependencies**
+
+```bash
+cd frontend
+npm install axios typesense instantsearch.js react-instantsearch
+npm install @tanstack/react-query zustand
+npm install react-icons lucide-react
+npm install -D @types/node
+```
+
+- [ ] **Step 3: Create .env.local from example**
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_TYPESENSE_HOST=localhost
+NEXT_PUBLIC_TYPESENSE_PORT=8108
+NEXT_PUBLIC_TYPESENSE_PROTOCOL=http
+NEXT_PUBLIC_TYPESENSE_SEARCH_ONLY_KEY=your-search-only-key
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add .
+git commit -m "chore: scaffold Next.js frontend with dependencies"
+```
+
+--------------------------------------------------------------------------------
+
+### Task 0.3: Docker Compose for Local Services
+
+- [ ] **Step 1: Create docker-compose.yml in project root**
+
+Create file: sari-ecommerce/docker-compose.yml
+
+```yaml
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  typesense:
+    image: typesense/typesense:27.1
+    ports:
+      - "8108:8108"
+    environment:
+      TYPESENSE_API_KEY: your-typesense-key
+      TYPESENSE_DATA_DIR: /data
+    volumes:
+      - typesense_data:/data
+
+volumes:
+  redis_data:
+  rabbitmq_data:
+  typesense_data:
+```
+
+- [ ] **Step 2: Start services**
+
+```bash
+docker-compose up -d
+```
+
+- [ ] **Step 3: Verify all services are running**
+
+```bash
+docker-compose ps
+```
+Expected: redis, rabbitmq, typesense all showing "Up"
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add docker-compose.yml
+git commit -m "chore: add docker-compose for Redis, RabbitMQ, Typesense"
+```
+
+
+================================================================================
+PHASE 1 — DATABASE SCHEMA & AUTHENTICATION
+================================================================================
+
+### Task 1.1: Database Migrations
+
+- [ ] **Step 1: Modify the default users migration**
+
+File: backend/database/migrations/0001_01_01_000000_create_users_table.php
+
+The default Breeze migration creates a users table. Modify it to add:
+```php
+Schema::create('users', function (Blueprint $table) {
+    $table->id();
+    $table->string('first_name');
+    $table->string('last_name');
+    $table->string('email')->unique();
+    $table->timestamp('email_verified_at')->nullable();
+    $table->string('password');
+    $table->string('phone')->nullable();
+    $table->string('avatar_url')->nullable();
+    $table->jsonb('default_address')->nullable();
+    $table->rememberToken();
+    $table->timestamps();
+    $table->softDeletes();
+});
+```
+
+- [ ] **Step 2: Create categories migration**
+
+```bash
+php artisan make:migration create_categories_table
+```
+
+```php
+Schema::create('categories', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->string('slug')->unique();
+    $table->text('description')->nullable();
+    $table->string('image_url')->nullable();
+    $table->foreignId('parent_id')->nullable()->constrained('categories')->onDelete('set null');
+    $table->integer('sort_order')->default(0);
+    $table->boolean('is_active')->default(true);
+    $table->timestamps();
+});
+```
+
+- [ ] **Step 3: Create products migration**
+
+```bash
+php artisan make:migration create_products_table
+```
+
+```php
+Schema::create('products', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('category_id')->constrained()->onDelete('cascade');
+    $table->foreignId('business_id')->constrained('users')->onDelete('cascade');
+    $table->string('name');
+    $table->string('slug')->unique();
+    $table->text('description')->nullable();
+    $table->text('short_description')->nullable();
+    $table->decimal('base_price', 12, 2);
+    $table->decimal('compare_at_price', 12, 2)->nullable();
+    $table->string('sku')->unique();
+    $table->integer('stock_quantity')->default(0);
+    $table->integer('low_stock_threshold')->default(5);
+    $table->enum('status', ['draft', 'active', 'archived'])->default('draft');
+    $table->string('brand')->nullable();
+    $table->jsonb('attributes')->nullable();
+    $table->decimal('weight', 8, 2)->nullable();
+    $table->boolean('is_featured')->default(false);
+    $table->integer('view_count')->default(0);
+    $table->timestamps();
+    $table->softDeletes();
+
+    $table->index(['category_id', 'status']);
+    $table->index('business_id');
+});
+```
+
+- [ ] **Step 4: Create product_variants migration**
+
+```bash
+php artisan make:migration create_product_variants_table
+```
+
+```php
+Schema::create('product_variants', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('product_id')->constrained()->onDelete('cascade');
+    $table->string('name');
+    $table->string('sku')->unique();
+    $table->decimal('price', 12, 2);
+    $table->integer('stock_quantity')->default(0);
+    $table->jsonb('options')->nullable();
+    $table->boolean('is_active')->default(true);
+    $table->timestamps();
+});
+```
+
+- [ ] **Step 5: Create product_images migration**
+
+```bash
+php artisan make:migration create_product_images_table
+```
+
+```php
+Schema::create('product_images', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('product_id')->constrained()->onDelete('cascade');
+    $table->string('url');
+    $table->string('alt_text')->nullable();
+    $table->integer('sort_order')->default(0);
+    $table->boolean('is_primary')->default(false);
+    $table->timestamps();
+});
+```
+
+- [ ] **Step 6: Create orders migration**
+
+```bash
+php artisan make:migration create_orders_table
+```
+
+```php
+Schema::create('orders', function (Blueprint $table) {
+    $table->id();
+    $table->string('order_number')->unique();
+    $table->foreignId('user_id')->constrained()->onDelete('cascade');
+    $table->enum('status', [
+        'pending', 'processing', 'paid', 'shipped',
+        'delivered', 'cancelled', 'refunded'
+    ])->default('pending');
+    $table->decimal('subtotal', 12, 2);
+    $table->decimal('shipping_fee', 12, 2)->default(0);
+    $table->decimal('tax', 12, 2)->default(0);
+    $table->decimal('total', 12, 2);
+    $table->string('payment_method')->nullable();
+    $table->string('payment_status')->default('unpaid');
+    $table->string('paymongo_checkout_id')->nullable();
+    $table->string('paymongo_payment_id')->nullable();
+    $table->jsonb('shipping_address');
+    $table->jsonb('billing_address')->nullable();
+    $table->text('notes')->nullable();
+    $table->timestamp('paid_at')->nullable();
+    $table->timestamp('shipped_at')->nullable();
+    $table->timestamp('delivered_at')->nullable();
+    $table->timestamps();
+    $table->softDeletes();
+
+    $table->index(['user_id', 'status']);
+});
+```
+
+- [ ] **Step 7: Create order_items migration**
+
+```bash
+php artisan make:migration create_order_items_table
+```
+
+```php
+Schema::create('order_items', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('order_id')->constrained()->onDelete('cascade');
+    $table->foreignId('product_id')->constrained();
+    $table->foreignId('product_variant_id')->nullable()->constrained();
+    $table->string('product_name');
+    $table->integer('quantity');
+    $table->decimal('unit_price', 12, 2);
+    $table->decimal('total_price', 12, 2);
+    $table->timestamps();
+});
+```
+
+- [ ] **Step 8: Create wishlists migration**
+
+```bash
+php artisan make:migration create_wishlists_table
+```
+
+```php
+Schema::create('wishlists', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('user_id')->constrained()->onDelete('cascade');
+    $table->foreignId('product_id')->constrained()->onDelete('cascade');
+    $table->timestamps();
+
+    $table->unique(['user_id', 'product_id']);
+});
+```
+
+- [ ] **Step 9: Create search_histories migration**
+
+```bash
+php artisan make:migration create_search_histories_table
+```
+
+```php
+Schema::create('search_histories', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('user_id')->constrained()->onDelete('cascade');
+    $table->string('query');
+    $table->integer('results_count')->default(0);
+    $table->timestamps();
+
+    $table->index('user_id');
+});
+```
+
+- [ ] **Step 10: Run all migrations**
+
+```bash
+php artisan migrate
+```
+Expected: All tables created successfully in Supabase PostgreSQL.
+
+- [ ] **Step 11: Commit**
+
+```bash
+git add .
+git commit -m "feat: add all database migrations for e-commerce schema"
+```
+
+--------------------------------------------------------------------------------
+
+### Task 1.2: Eloquent Models
+
+- [ ] **Step 1: Create RoleEnum**
+
+Create file: backend/app/Enums/RoleEnum.php
+
+```php
+<?php
+
+namespace App\Enums;
+
+enum RoleEnum: string
+{
+    case USER = 'user';
+    case BUSINESS = 'business';
+    case ADMIN = 'admin';
+}
+```
+
+- [ ] **Step 2: Update User model**
+
+File: backend/app/Models/User.php
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable, HasRoles, SoftDeletes;
+
+    protected $fillable = [
+        'first_name', 'last_name', 'email', 'password',
+        'phone', 'avatar_url', 'default_address',
+    ];
+
+    protected $hidden = ['password', 'remember_token'];
+
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'default_address' => 'array',
+        ];
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function wishlist()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'business_id');
+    }
+
+    public function searchHistories()
+    {
+        return $this->hasMany(SearchHistory::class);
+    }
+
+    public function getFullNameAttribute(): string
+    {
+        return "{$this->first_name} {$this->last_name}";
+    }
+}
+```
+
+- [ ] **Step 3: Create Product model**
+
+Create file: backend/app/Models/Product.php
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
+
+class Product extends Model
+{
+    use HasFactory, SoftDeletes, Searchable;
+
+    protected $fillable = [
+        'category_id', 'business_id', 'name', 'slug', 'description',
+        'short_description', 'base_price', 'compare_at_price', 'sku',
+        'stock_quantity', 'low_stock_threshold', 'status', 'brand',
+        'attributes', 'weight', 'is_featured', 'view_count',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'base_price' => 'decimal:2',
+            'compare_at_price' => 'decimal:2',
+            'attributes' => 'array',
+            'is_featured' => 'boolean',
+        ];
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => (string) $this->id,
+            'name' => $this->name,
+            'description' => $this->description ?? '',
+            'category' => $this->category?->name ?? '',
+            'brand' => $this->brand ?? '',
+            'base_price' => (float) $this->base_price,
+            'is_featured' => $this->is_featured,
+            'stock_quantity' => $this->stock_quantity,
+            'created_at' => $this->created_at->timestamp,
+        ];
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    public function business()
+    {
+        return $this->belongsTo(User::class, 'business_id');
+    }
+
+    public function variants()
+    {
+        return $this->hasMany(ProductVariant::class);
+    }
+
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('sort_order');
+    }
+
+    public function primaryImage()
+    {
+        return $this->hasOne(ProductImage::class)->where('is_primary', true);
+    }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+}
+```
+
+- [ ] **Step 4: Create Category model**
+
+Create file: backend/app/Models/Category.php
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Category extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'name', 'slug', 'description', 'image_url',
+        'parent_id', 'sort_order', 'is_active',
+    ];
+
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean'];
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(Category::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Category::class, 'parent_id');
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
+}
+```
+
+- [ ] **Step 5: Create remaining models (Order, OrderItem, ProductVariant, ProductImage, Wishlist, SearchHistory)**
+
+Each follows the same pattern — define $fillable, casts, and relationships.
+Create all six files in backend/app/Models/:
+
+Order.php:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Order extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    protected $fillable = [
+        'order_number', 'user_id', 'status', 'subtotal', 'shipping_fee',
+        'tax', 'total', 'payment_method', 'payment_status',
+        'paymongo_checkout_id', 'paymongo_payment_id',
+        'shipping_address', 'billing_address', 'notes',
+        'paid_at', 'shipped_at', 'delivered_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'shipping_address' => 'array',
+            'billing_address' => 'array',
+            'paid_at' => 'datetime',
+            'shipped_at' => 'datetime',
+            'delivered_at' => 'datetime',
+        ];
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function items()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    public static function generateOrderNumber(): string
+    {
+        return 'SARI-' . strtoupper(uniqid());
+    }
+}
+```
+
+OrderItem.php:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class OrderItem extends Model
+{
+    protected $fillable = [
+        'order_id', 'product_id', 'product_variant_id',
+        'product_name', 'quantity', 'unit_price', 'total_price',
+    ];
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function variant()
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+}
+```
+
+ProductVariant.php:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ProductVariant extends Model
+{
+    protected $fillable = [
+        'product_id', 'name', 'sku', 'price',
+        'stock_quantity', 'options', 'is_active',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'options' => 'array',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+}
+```
+
+ProductImage.php:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ProductImage extends Model
+{
+    protected $fillable = [
+        'product_id', 'url', 'alt_text', 'sort_order', 'is_primary',
+    ];
+
+    protected function casts(): array
+    {
+        return ['is_primary' => 'boolean'];
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+}
+```
+
+Wishlist.php:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Wishlist extends Model
+{
+    protected $fillable = ['user_id', 'product_id'];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+}
+```
+
+SearchHistory.php:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class SearchHistory extends Model
+{
+    protected $fillable = ['user_id', 'query', 'results_count'];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+}
+```
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add .
+git commit -m "feat: add all Eloquent models with relationships"
+```
+
+--------------------------------------------------------------------------------
+
+### Task 1.3: Role-Based Access Control (RBAC) Setup
+
+- [ ] **Step 1: Create RoleSeeder**
+
+Create file: backend/database/seeders/RoleSeeder.php
+
+```php
+<?php
+
+namespace Database\Seeders;
+
+use App\Enums\RoleEnum;
+use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+
+class RoleSeeder extends Seeder
+{
+    public function run(): void
+    {
+        // Reset cached roles and permissions
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // Create permissions
+        $permissions = [
+            // Product permissions
+            'view products', 'create products', 'edit products', 'delete products',
+            // Order permissions
+            'view orders', 'manage orders', 'view own orders',
+            // User permissions
+            'view users', 'manage users',
+            // Inventory permissions
+            'manage inventory',
+            // Dashboard permissions
+            'view admin dashboard', 'view business dashboard',
+        ];
+
+        foreach ($permissions as $permission) {
+            Permission::create(['name' => $permission]);
+        }
+
+        // Create roles and assign permissions
+        $userRole = Role::create(['name' => RoleEnum::USER->value]);
+        $userRole->givePermissionTo([
+            'view products', 'view own orders',
+        ]);
+
+        $businessRole = Role::create(['name' => RoleEnum::BUSINESS->value]);
+        $businessRole->givePermissionTo([
+            'view products', 'create products', 'edit products', 'delete products',
+            'view orders', 'manage orders', 'manage inventory',
+            'view business dashboard',
+        ]);
+
+        $adminRole = Role::create(['name' => RoleEnum::ADMIN->value]);
+        $adminRole->givePermissionTo(Permission::all());
+    }
+}
+```
+
+- [ ] **Step 2: Create AdminSeeder**
+
+Create file: backend/database/seeders/AdminSeeder.php
+
+```php
+<?php
+
+namespace Database\Seeders;
+
+use App\Enums\RoleEnum;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+
+class AdminSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $admin = User::create([
+            'first_name' => 'Sari',
+            'last_name' => 'Admin',
+            'email' => 'admin@sari.ph',
+            'password' => bcrypt('password'),
+            'email_verified_at' => now(),
+        ]);
+
+        $admin->assignRole(RoleEnum::ADMIN->value);
+    }
+}
+```
+
+- [ ] **Step 3: Update DatabaseSeeder**
+
+File: backend/database/seeders/DatabaseSeeder.php
+
+```php
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+
+class DatabaseSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $this->call([
+            RoleSeeder::class,
+            AdminSeeder::class,
+            CategorySeeder::class,
+        ]);
+    }
+}
+```
+
+- [ ] **Step 4: Register Spatie middleware aliases**
+
+File: backend/bootstrap/app.php — inside the withMiddleware callback, add:
+
+```php
+->withMiddleware(function (Middleware $middleware) {
+    $middleware->alias([
+        'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+        'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+        'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+    ]);
+
+    $middleware->statefulApi();
+})
+```
+
+- [ ] **Step 5: Update config/cors.php**
+
+```php
+return [
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'allowed_methods' => ['*'],
+    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:3000')],
+    'allowed_origins_patterns' => [],
+    'allowed_headers' => ['*'],
+    'exposed_headers' => [],
+    'max_age' => 0,
+    'supports_credentials' => true,
+];
+```
+
+- [ ] **Step 6: Update config/sanctum.php stateful domains**
+
+```php
+'stateful' => explode(',', env(
+    'SANCTUM_STATEFUL_DOMAINS',
+    'localhost:3000,127.0.0.1:3000'
+)),
+```
+
+- [ ] **Step 7: Run seeders**
+
+```bash
+php artisan db:seed
+```
+Expected: Roles (user, business, admin), permissions, and admin user created.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add .
+git commit -m "feat: add RBAC with Spatie — roles, permissions, seeders"
+```
+
+--------------------------------------------------------------------------------
+
+### Task 1.4: Auth Controllers & Registration with Roles
+
+- [ ] **Step 1: Update RegisterController to accept role selection**
+
+File: backend/app/Http/Controllers/Auth/RegisterController.php
+
+```php
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Enums\RoleEnum;
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules;
+
+class RegisterController extends Controller
+{
+    public function __invoke(Request $request): JsonResponse
+    {
+        $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'role' => ['sometimes', 'string', 'in:user,business'],
+        ]);
+
+        $user = User::create([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        $role = $request->input('role', RoleEnum::USER->value);
+        $user->assignRole($role);
+
+        event(new Registered($user));
+
+        return response()->json([
+            'message' => 'Registration successful.',
+            'user' => $user->load('roles'),
+        ], 201);
+    }
+}
+```
+
+- [ ] **Step 2: Create API routes for auth and protected resources**
+
+File: backend/routes/api.php
+
+```php
+<?php
+
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\WishlistController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+// Public routes
+Route::post('/register', RegisterController::class);
+Route::post('/login', LoginController::class);
+
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{slug}', [ProductController::class, 'show']);
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/categories/{slug}', [CategoryController::class, 'show']);
+Route::get('/search', [SearchController::class, 'search']);
+Route::get('/recommendations/popular', [RecommendationController::class, 'popular']);
+
+// PayMongo webhook (no auth, verified by signature)
+Route::post('/webhooks/paymongo', [WebhookController::class, 'handlePaymongo']);
+
+// Authenticated routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', LogoutController::class);
+    Route::get('/user', fn (Request $request) => $request->user()->load('roles'));
+
+    // Cart (Redis-backed)
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart', [CartController::class, 'store']);
+    Route::put('/cart/{productId}', [CartController::class, 'update']);
+    Route::delete('/cart/{productId}', [CartController::class, 'destroy']);
+    Route::delete('/cart', [CartController::class, 'clear']);
+
+    // Wishlist
+    Route::get('/wishlist', [WishlistController::class, 'index']);
+    Route::post('/wishlist/{product}', [WishlistController::class, 'toggle']);
+
+    // Checkout & Orders
+    Route::post('/checkout', [CheckoutController::class, 'createSession']);
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{order}', [OrderController::class, 'show']);
+
+    // Personalized recommendations
+    Route::get('/recommendations/for-you', [RecommendationController::class, 'forUser']);
+    Route::get('/recommendations/similar/{product}', [RecommendationController::class, 'similarTo']);
+
+    // Business routes
+    Route::middleware('role:business|admin')->prefix('business')->group(function () {
+        Route::get('/products', [ProductController::class, 'myProducts']);
+        Route::post('/products', [ProductController::class, 'store']);
+        Route::put('/products/{product}', [ProductController::class, 'update']);
+        Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+        Route::get('/orders', [OrderController::class, 'businessOrders']);
+        Route::put('/orders/{order}/status', [OrderController::class, 'updateStatus']);
+    });
+
+    // Admin routes
+    Route::middleware('role:admin')->prefix('admin')->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index']);
+        Route::apiResource('/users', App\Http\Controllers\Admin\UserController::class);
+        Route::get('/inventory', [App\Http\Controllers\Admin\InventoryController::class, 'index']);
+        Route::put('/inventory/{product}', [App\Http\Controllers\Admin\InventoryController::class, 'update']);
+    });
+});
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add .
+git commit -m "feat: add auth controllers and full API route map"
+```
+
+
+================================================================================
+PHASE 2 — CORE SERVICES LAYER
+================================================================================
+
+### Task 2.1: Redis Cart Service
+
+- [ ] **Step 1: Configure Redis databases**
+
+File: backend/config/database.php — update the redis section:
+
+```php
+'redis' => [
+    'client' => env('REDIS_CLIENT', 'predis'),
+
+    'default' => [
+        'host' => env('REDIS_HOST', '127.0.0.1'),
+        'password' => env('REDIS_PASSWORD', null),
+        'port' => env('REDIS_PORT', 6379),
+        'database' => env('REDIS_DB', 0),
+    ],
+
+    'cache' => [
+        'host' => env('REDIS_HOST', '127.0.0.1'),
+        'password' => env('REDIS_PASSWORD', null),
+        'port' => env('REDIS_PORT', 6379),
+        'database' => env('REDIS_CACHE_DB', 1),
+    ],
+
+    'session' => [
+        'host' => env('REDIS_HOST', '127.0.0.1'),
+        'password' => env('REDIS_PASSWORD', null),
+        'port' => env('REDIS_PORT', 6379),
+        'database' => env('REDIS_SESSION_DB', 2),
+    ],
+],
+```
+
+- [ ] **Step 2: Create CartService**
+
+Create file: backend/app/Services/CartService.php
+
+```php
+<?php
+
+namespace App\Services;
+
+use App\Models\Product;
+use Illuminate\Support\Facades\Redis;
+
+class CartService
+{
+    private const CART_PREFIX = 'cart:';
+    private const CART_TTL = 60 * 60 * 24 * 7; // 7 days
+
+    private function cartKey(int $userId): string
+    {
+        return self::CART_PREFIX . $userId;
+    }
+
+    public function getCart(int $userId): array
+    {
+        $cartData = Redis::hgetall($this->cartKey($userId));
+        if (empty($cartData)) {
+            return [];
+        }
+
+        $items = [];
+        foreach ($cartData as $productId => $data) {
+            $decoded = json_decode($data, true);
+            $product = Product::with('primaryImage')->find($productId);
+            if ($product) {
+                $items[] = [
+                    'product_id' => (int) $productId,
+                    'quantity' => $decoded['quantity'],
+                    'variant_id' => $decoded['variant_id'] ?? null,
+                    'product' => [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'slug' => $product->slug,
+                        'base_price' => $product->base_price,
+                        'image_url' => $product->primaryImage?->url,
+                        'stock_quantity' => $product->stock_quantity,
+                    ],
+                ];
+            }
+        }
+
+        return $items;
+    }
+
+    public function addItem(int $userId, int $productId, int $quantity = 1, ?int $variantId = null): array
+    {
+        $key = $this->cartKey($userId);
+        $existing = Redis::hget($key, $productId);
+
+        if ($existing) {
+            $decoded = json_decode($existing, true);
+            $decoded['quantity'] += $quantity;
+            Redis::hset($key, $productId, json_encode($decoded));
+        } else {
+            Redis::hset($key, $productId, json_encode([
+                'quantity' => $quantity,
+                'variant_id' => $variantId,
+            ]));
+        }
+
+        Redis::expire($key, self::CART_TTL);
+
+        return $this->getCart($userId);
+    }
+
+    public function updateQuantity(int $userId, int $productId, int $quantity): array
+    {
+        $key = $this->cartKey($userId);
+
+        if ($quantity <= 0) {
+            Redis::hdel($key, $productId);
+        } else {
+            $existing = Redis::hget($key, $productId);
+            if ($existing) {
+                $decoded = json_decode($existing, true);
+                $decoded['quantity'] = $quantity;
+                Redis::hset($key, $productId, json_encode($decoded));
+            }
+        }
+
+        Redis::expire($key, self::CART_TTL);
+
+        return $this->getCart($userId);
+    }
+
+    public function removeItem(int $userId, int $productId): array
+    {
+        Redis::hdel($this->cartKey($userId), $productId);
+        return $this->getCart($userId);
+    }
+
+    public function clearCart(int $userId): void
+    {
+        Redis::del($this->cartKey($userId));
+    }
+
+    public function getCartTotal(int $userId): float
+    {
+        $cart = $this->getCart($userId);
+        return collect($cart)->sum(function ($item) {
+            return $item['product']['base_price'] * $item['quantity'];
+        });
+    }
+}
+```
+
+- [ ] **Step 3: Create CartController**
+
+Create file: backend/app/Http/Controllers/CartController.php
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Services\CartService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class CartController extends Controller
+{
+    public function __construct(private CartService $cartService) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $cart = $this->cartService->getCart($request->user()->id);
+        $total = $this->cartService->getCartTotal($request->user()->id);
+
+        return response()->json([
+            'items' => $cart,
+            'total' => $total,
+            'item_count' => count($cart),
+        ]);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'variant_id' => 'nullable|exists:product_variants,id',
+        ]);
+
+        $cart = $this->cartService->addItem(
+            $request->user()->id,
+            $request->product_id,
+            $request->quantity,
+            $request->variant_id,
+        );
+
+        return response()->json(['items' => $cart], 201);
+    }
+
+    public function update(Request $request, int $productId): JsonResponse
+    {
+        $request->validate(['quantity' => 'required|integer|min:0']);
+
+        $cart = $this->cartService->updateQuantity(
+            $request->user()->id,
+            $productId,
+            $request->quantity,
+        );
+
+        return response()->json(['items' => $cart]);
+    }
+
+    public function destroy(Request $request, int $productId): JsonResponse
+    {
+        $cart = $this->cartService->removeItem($request->user()->id, $productId);
+        return response()->json(['items' => $cart]);
+    }
+
+    public function clear(Request $request): JsonResponse
+    {
+        $this->cartService->clearCart($request->user()->id);
+        return response()->json(['message' => 'Cart cleared']);
+    }
+}
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add .
+git commit -m "feat: add Redis-backed CartService and CartController"
+```
+
+--------------------------------------------------------------------------------
+
+### Task 2.2: Supabase Image Storage Service
+
+- [ ] **Step 1: Configure Supabase S3 disk**
+
+File: backend/config/filesystems.php — add to 'disks' array:
+
+```php
+'supabase' => [
+    'driver' => 's3',
+    'key' => env('SUPABASE_ACCESS_KEY'),
+    'secret' => env('SUPABASE_SECRET_KEY'),
+    'region' => env('SUPABASE_REGION', 'ap-southeast-1'),
+    'bucket' => env('SUPABASE_BUCKET_NAME', 'product-images'),
+    'endpoint' => env('SUPABASE_ENDPOINT'),
+    'use_path_style_endpoint' => true,
+],
+```
+
+- [ ] **Step 2: Create ImageService**
+
+Create file: backend/app/Services/ImageService.php
+
+```php
+<?php
+
+namespace App\Services;
+
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
+class ImageService
+{
+    private string $disk = 'supabase';
+
+    public function upload(UploadedFile $file, string $directory = 'products'): string
+    {
+        $filename = $directory . '/' . Str::uuid() . '.' . $file->getClientOriginalExtension();
+        Storage::disk($this->disk)->put($filename, file_get_contents($file));
+
+        return Storage::disk($this->disk)->url($filename);
+    }
+
+    public function delete(string $path): bool
+    {
+        return Storage::disk($this->disk)->delete($path);
+    }
+
+    public function getPublicUrl(string $path): string
+    {
+        return Storage::disk($this->disk)->url($path);
+    }
+}
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add .
+git commit -m "feat: add Supabase Storage ImageService"
+```
+
+
+================================================================================
+PHASE 3 — PAYMENT INTEGRATION (PAYMONGO)
+================================================================================
+
+### Task 3.1: PayMongo Payment Service
+
+- [ ] **Step 1: Add PayMongo config to services.php**
+
+File: backend/config/services.php — add:
+
+```php
+'paymongo' => [
+    'public_key' => env('PAYMONGO_PUBLIC_KEY'),
+    'secret_key' => env('PAYMONGO_SECRET_KEY'),
+    'webhook_secret' => env('PAYMONGO_WEBHOOK_SECRET'),
+    'base_url' => 'https://api.paymongo.com/v1',
+],
+```
+
+- [ ] **Step 2: Create PaymentService**
+
+Create file: backend/app/Services/PaymentService.php
+
+```php
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+class PaymentService
+{
+    private string $baseUrl;
+    private string $secretKey;
+
+    public function __construct()
+    {
+        $this->baseUrl = config('services.paymongo.base_url');
+        $this->secretKey = config('services.paymongo.secret_key');
+    }
+
+    /**
+     * Create a PayMongo Checkout Session.
+     * Supports: card (Visa/Mastercard), gcash
+     */
+    public function createCheckoutSession(array $lineItems, array $metadata = []): array
+    {
+        $response = Http::withBasicAuth($this->secretKey, '')
+            ->post("{$this->baseUrl}/checkout_sessions", [
+                'data' => [
+                    'attributes' => [
+                        'line_items' => $lineItems,
+                        'payment_method_types' => ['card', 'gcash'],
+                        'send_email_receipt' => true,
+                        'show_description' => true,
+                        'show_line_items' => true,
+                        'description' => 'SARI E-Commerce Order',
+                        'success_url' => config('app.frontend_url') . '/checkout/success?session_id={id}',
+                        'cancel_url' => config('app.frontend_url') . '/checkout/cancel',
+                        'metadata' => $metadata,
+                    ],
+                ],
+            ]);
+
+        if ($response->failed()) {
+            Log::error('PayMongo checkout creation failed', [
+                'status' => $response->status(),
+                'body' => $response->json(),
+            ]);
+            throw new \RuntimeException('Failed to create checkout session');
+        }
+
+        return $response->json('data');
+    }
+
+    /**
+     * Retrieve a checkout session by ID.
+     */
+    public function getCheckoutSession(string $sessionId): array
+    {
+        $response = Http::withBasicAuth($this->secretKey, '')
+            ->get("{$this->baseUrl}/checkout_sessions/{$sessionId}");
+
+        return $response->json('data');
+    }
+
+    /**
+     * Verify the PayMongo webhook signature.
+     */
+    public function verifyWebhookSignature(string $payload, string $signature): bool
+    {
+        $webhookSecret = config('services.paymongo.webhook_secret');
+
+        $parts = explode(',', $signature);
+        $timestamp = null;
+        $testSignature = null;
+        $liveSignature = null;
+
+        foreach ($parts as $part) {
+            [$key, $value] = explode('=', $part, 2);
+            match (trim($key)) {
+                't' => $timestamp = $value,
+                'te' => $testSignature = $value,
+                'li' => $liveSignature = $value,
+                default => null,
+            };
+        }
+
+        $activeSignature = $liveSignature ?? $testSignature;
+        $computedSignature = hash_hmac(
+            'sha256',
+            "{$timestamp}.{$payload}",
+            $webhookSecret
+        );
+
+        return hash_equals($computedSignature, $activeSignature);
+    }
+}
+```
+
+- [ ] **Step 3: Create CheckoutController**
+
+Create file: backend/app/Http/Controllers/CheckoutController.php
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Order;
+use App\Services\CartService;
+use App\Services\PaymentService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class CheckoutController extends Controller
+{
+    public function __construct(
+        private CartService $cartService,
+        private PaymentService $paymentService,
+    ) {}
+
+    public function createSession(Request $request): JsonResponse
+    {
+        $request->validate([
+            'shipping_address' => 'required|array',
+            'shipping_address.line1' => 'required|string',
+            'shipping_address.city' => 'required|string',
+            'shipping_address.state' => 'required|string',
+            'shipping_address.postal_code' => 'required|string',
+            'shipping_address.country' => 'required|string',
+            'billing_address' => 'nullable|array',
+        ]);
+
+        $user = $request->user();
+        $cartItems = $this->cartService->getCart($user->id);
+
+        if (empty($cartItems)) {
+            return response()->json(['error' => 'Cart is empty'], 422);
+        }
+
+        return DB::transaction(function () use ($user, $cartItems, $request) {
+            // Build line items for PayMongo (amounts in centavos)
+            $lineItems = [];
+            $subtotal = 0;
+
+            foreach ($cartItems as $item) {
+                $amount = (int) ($item['product']['base_price'] * 100);
+                $lineItems[] = [
+                    'name' => $item['product']['name'],
+                    'quantity' => $item['quantity'],
+                    'amount' => $amount,
+                    'currency' => 'PHP',
+                    'description' => "SKU: {$item['product_id']}",
+                ];
+                $subtotal += $item['product']['base_price'] * $item['quantity'];
+            }
+
+            // Create order in database
+            $order = Order::create([
+                'order_number' => Order::generateOrderNumber(),
+                'user_id' => $user->id,
+                'status' => 'pending',
+                'subtotal' => $subtotal,
+                'shipping_fee' => 0,
+                'tax' => 0,
+                'total' => $subtotal,
+                'shipping_address' => $request->shipping_address,
+                'billing_address' => $request->billing_address ?? $request->shipping_address,
+            ]);
+
+            // Create order items snapshot
+            foreach ($cartItems as $item) {
+                $order->items()->create([
+                    'product_id' => $item['product_id'],
+                    'product_variant_id' => $item['variant_id'] ?? null,
+                    'product_name' => $item['product']['name'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['product']['base_price'],
+                    'total_price' => $item['product']['base_price'] * $item['quantity'],
+                ]);
+            }
+
+            // Create PayMongo checkout session
+            $session = $this->paymentService->createCheckoutSession(
+                $lineItems,
+                ['order_id' => $order->id, 'order_number' => $order->order_number]
+            );
+
+            // Save checkout ID for reference
+            $order->update([
+                'paymongo_checkout_id' => $session['id'],
+            ]);
+
+            return response()->json([
+                'checkout_url' => $session['attributes']['checkout_url'],
+                'order' => $order->load('items'),
+            ]);
+        });
+    }
+}
+```
+
+- [ ] **Step 4: Create ProcessPaymentWebhook job**
+
+Create file: backend/app/Jobs/ProcessPaymentWebhook.php
+
+```php
+<?php
+
+namespace App\Jobs;
+
+use App\Models\Order;
+use App\Models\Product;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+class ProcessPaymentWebhook implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public function __construct(private array $eventData) {}
+
+    public function handle(): void
+    {
+        $attributes = $this->eventData['attributes'] ?? [];
+        $paymentData = $attributes['data'] ?? [];
+        $metadata = $paymentData['attributes']['metadata'] ?? [];
+
+        $orderId = $metadata['order_id'] ?? null;
+
+        if (! $orderId) {
+            Log::warning('PayMongo webhook: no order_id in metadata', $this->eventData);
+            return;
+        }
+
+        $order = Order::with('items')->find($orderId);
+
+        if (! $order) {
+            Log::warning("PayMongo webhook: order {$orderId} not found");
+            return;
+        }
+
+        // Idempotency check
+        if ($order->payment_status === 'paid') {
+            Log::info("PayMongo webhook: order {$orderId} already paid, skipping");
+            return;
+        }
+
+        DB::transaction(function () use ($order, $paymentData) {
+            $order->update([
+                'status' => 'paid',
+                'payment_status' => 'paid',
+                'payment_method' => $paymentData['attributes']['payment_method_used'] ?? 'unknown',
+                'paymongo_payment_id' => $paymentData['id'] ?? null,
+                'paid_at' => now(),
+            ]);
+
+            // Deduct inventory
+            foreach ($order->items as $item) {
+                Product::where('id', $item->product_id)
+                    ->decrement('stock_quantity', $item->quantity);
+            }
+        });
+
+        Log::info("PayMongo webhook: order {$orderId} marked as paid");
+    }
+}
+```
+
+- [ ] **Step 5: Create WebhookController**
+
+Create file: backend/app/Http/Controllers/WebhookController.php
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Jobs\ProcessPaymentWebhook;
+use App\Services\PaymentService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+class WebhookController extends Controller
+{
+    public function handlePaymongo(Request $request, PaymentService $paymentService): JsonResponse
+    {
+        $payload = $request->getContent();
+        $signature = $request->header('Paymongo-Signature', '');
+
+        if (! $paymentService->verifyWebhookSignature($payload, $signature)) {
+            Log::warning('PayMongo webhook: invalid signature');
+            return response()->json(['error' => 'Invalid signature'], 403);
+        }
+
+        $event = $request->input('data');
+        $eventType = $event['attributes']['type'] ?? '';
+
+        if ($eventType === 'checkout_session.payment.paid') {
+            ProcessPaymentWebhook::dispatch($event);
+        }
+
+        return response()->json(['message' => 'Webhook received'], 200);
+    }
+}
+```
+
+IMPORTANT: Exclude the webhook route from CSRF verification.
+File: backend/bootstrap/app.php — add to withMiddleware:
+```php
+$middleware->validateCsrfTokens(except: [
+    'api/webhooks/*',
+]);
+```
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add .
+git commit -m "feat: add PayMongo checkout + webhook + payment processing"
+```
+
+
+================================================================================
+PHASE 4 — SEARCH (TYPESENSE + LARAVEL SCOUT)
+================================================================================
+
+### Task 4.1: Typesense Configuration
+
+- [ ] **Step 1: Configure Scout for Typesense**
+
+File: backend/config/scout.php — set the driver and Typesense config:
+
+```php
+'driver' => env('SCOUT_DRIVER', 'typesense'),
+
+'typesense' => [
+    'api_key' => env('TYPESENSE_API_KEY', ''),
+    'nodes' => [
+        [
+            'host' => env('TYPESENSE_HOST', 'localhost'),
+            'port' => env('TYPESENSE_PORT', '8108'),
+            'protocol' => env('TYPESENSE_PROTOCOL', 'http'),
+        ],
+    ],
+    'nearest_node' => null,
+    'connection_timeout_seconds' => 2,
+    'healthcheck_interval_seconds' => 30,
+    'num_retries' => 3,
+    'retry_interval_seconds' => 1,
+],
+```
+
+- [ ] **Step 2: Define the Typesense collection schema on the Product model**
+
+File: backend/app/Models/Product.php — add method:
+
+```php
+public function getCollectionSchema(): array
+{
+    return [
+        'name' => $this->searchableAs(),
+        'fields' => [
+            ['name' => 'id', 'type' => 'string'],
+            ['name' => 'name', 'type' => 'string'],
+            ['name' => 'description', 'type' => 'string'],
+            ['name' => 'category', 'type' => 'string', 'facet' => true],
+            ['name' => 'brand', 'type' => 'string', 'facet' => true],
+            ['name' => 'base_price', 'type' => 'float'],
+            ['name' => 'is_featured', 'type' => 'bool'],
+            ['name' => 'stock_quantity', 'type' => 'int32'],
+            ['name' => 'created_at', 'type' => 'int64'],
+        ],
+        'default_sorting_field' => 'created_at',
+    ];
+}
+
+public function typesenseQueryBy(): array
+{
+    return ['name', 'description', 'category', 'brand'];
+}
+```
+
+- [ ] **Step 3: Create SearchController**
+
+Create file: backend/app/Http/Controllers/SearchController.php
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Product;
+use App\Models\SearchHistory;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class SearchController extends Controller
+{
+    public function search(Request $request): JsonResponse
+    {
+        $request->validate([
+            'q' => 'required|string|min:1|max:255',
+            'category' => 'nullable|string',
+            'min_price' => 'nullable|numeric|min:0',
+            'max_price' => 'nullable|numeric|min:0',
+            'sort' => 'nullable|string|in:relevance,price_asc,price_desc,newest',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $query = Product::search($request->q);
+
+        // Apply filters
+        if ($request->category) {
+            $query->where('category', $request->category);
+        }
+        if ($request->min_price) {
+            $query->where('base_price', '>=', (float) $request->min_price);
+        }
+        if ($request->max_price) {
+            $query->where('base_price', '<=', (float) $request->max_price);
+        }
+
+        $perPage = $request->input('per_page', 20);
+        $results = $query->paginate($perPage);
+
+        // Record search history for logged-in users
+        if ($request->user()) {
+            SearchHistory::create([
+                'user_id' => $request->user()->id,
+                'query' => $request->q,
+                'results_count' => $results->total(),
+            ]);
+        }
+
+        return response()->json($results);
+    }
+}
+```
+
+- [ ] **Step 4: Import existing products to Typesense**
+
+```bash
+php artisan scout:import "App\Models\Product"
+```
+Expected: All active products synced to Typesense collection.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add .
+git commit -m "feat: add Typesense search with Scout and SearchController"
+```
+
+
+================================================================================
+PHASE 5 — AI RECOMMENDATIONS (RECOMBEE)
+================================================================================
+
+### Task 5.1: Recombee Recommendation Service
+
+- [ ] **Step 1: Add Recombee config to services.php**
+
+File: backend/config/services.php — add:
+
+```php
+'recombee' => [
+    'database_id' => env('RECOMBEE_DATABASE_ID'),
+    'private_token' => env('RECOMBEE_PRIVATE_TOKEN'),
+    'region' => env('RECOMBEE_REGION', 'ap-se'),
+],
+```
+
+- [ ] **Step 2: Create RecommendationService**
+
+Create file: backend/app/Services/RecommendationService.php
+
+```php
+<?php
+
+namespace App\Services;
+
+use Recombee\RecommApi\Client;
+use Recombee\RecommApi\Requests as Reqs;
+use Illuminate\Support\Facades\Log;
+
+class RecommendationService
+{
+    private Client $client;
+
+    public function __construct()
+    {
+        $this->client = new Client(
+            config('services.recombee.database_id'),
+            config('services.recombee.private_token'),
+            ['region' => config('services.recombee.region')]
+        );
+    }
+
+    /**
+     * Send a product view interaction.
+     */
+    public function addDetailView(int $userId, int $productId): void
+    {
+        try {
+            $this->client->send(new Reqs\AddDetailView(
+                (string) $userId,
+                (string) $productId,
+                ['cascadeCreate' => true, 'timestamp' => time()]
+            ));
+        } catch (\Exception $e) {
+            Log::warning('Recombee addDetailView failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Send a cart addition interaction.
+     */
+    public function addCartAddition(int $userId, int $productId, int $amount = 1): void
+    {
+        try {
+            $this->client->send(new Reqs\AddCartAddition(
+                (string) $userId,
+                (string) $productId,
+                ['cascadeCreate' => true, 'amount' => $amount]
+            ));
+        } catch (\Exception $e) {
+            Log::warning('Recombee addCartAddition failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Send a purchase interaction.
+     */
+    public function addPurchase(int $userId, int $productId, int $amount = 1): void
+    {
+        try {
+            $this->client->send(new Reqs\AddPurchase(
+                (string) $userId,
+                (string) $productId,
+                ['cascadeCreate' => true, 'amount' => $amount]
+            ));
+        } catch (\Exception $e) {
+            Log::warning('Recombee addPurchase failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Get personalized recommendations for a user.
+     */
+    public function recommendForUser(int $userId, int $count = 10): array
+    {
+        try {
+            $response = $this->client->send(new Reqs\RecommendItemsToUser(
+                (string) $userId,
+                $count,
+                ['cascadeCreate' => true, 'returnProperties' => true]
+            ));
+
+            return $response['recomms'] ?? [];
+        } catch (\Exception $e) {
+            Log::warning('Recombee recommendForUser failed', [
+                'error' => $e->getMessage(),
+            ]);
+            return [];
+        }
+    }
+
+    /**
+     * Get items similar to a given product.
+     */
+    public function recommendSimilar(int $productId, int $count = 10): array
+    {
+        try {
+            $response = $this->client->send(new Reqs\RecommendItemsToItem(
+                (string) $productId,
+                null,
+                $count,
+                ['cascadeCreate' => true, 'returnProperties' => true]
+            ));
+
+            return $response['recomms'] ?? [];
+        } catch (\Exception $e) {
+            Log::warning('Recombee recommendSimilar failed', [
+                'error' => $e->getMessage(),
+            ]);
+            return [];
+        }
+    }
+
+    /**
+     * Sync a product's properties to Recombee.
+     */
+    public function syncProduct(array $product): void
+    {
+        try {
+            $this->client->send(new Reqs\SetItemValues(
+                (string) $product['id'],
+                [
+                    'name' => $product['name'],
+                    'category' => $product['category'] ?? '',
+                    'base_price' => (float) $product['base_price'],
+                    'brand' => $product['brand'] ?? '',
+                ],
+                ['cascadeCreate' => true]
+            ));
+        } catch (\Exception $e) {
+            Log::warning('Recombee syncProduct failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+}
+```
+
+- [ ] **Step 3: Create SyncInteractionToRecombee job**
+
+Create file: backend/app/Jobs/SyncInteractionToRecombee.php
+
+```php
+<?php
+
+namespace App\Jobs;
+
+use App\Services\RecommendationService;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+
+class SyncInteractionToRecombee implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public function __construct(
+        private string $interactionType,
+        private int $userId,
+        private int $productId,
+        private int $amount = 1,
+    ) {}
+
+    public function handle(RecommendationService $service): void
+    {
+        match ($this->interactionType) {
+            'view' => $service->addDetailView($this->userId, $this->productId),
+            'cart' => $service->addCartAddition($this->userId, $this->productId, $this->amount),
+            'purchase' => $service->addPurchase($this->userId, $this->productId, $this->amount),
+            default => null,
+        };
+    }
+}
+```
+
+- [ ] **Step 4: Create RecommendationController**
+
+Create file: backend/app/Http/Controllers/RecommendationController.php
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Product;
+use App\Services\RecommendationService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class RecommendationController extends Controller
+{
+    public function __construct(private RecommendationService $recombee) {}
+
+    public function popular(): JsonResponse
+    {
+        // Fallback: return featured/most-viewed products
+        $products = Product::where('status', 'active')
+            ->where('is_featured', true)
+            ->orderByDesc('view_count')
+            ->limit(12)
+            ->with('primaryImage', 'category')
+            ->get();
+
+        return response()->json(['data' => $products]);
+    }
+
+    public function forUser(Request $request): JsonResponse
+    {
+        $recommendations = $this->recombee->recommendForUser(
+            $request->user()->id,
+            12
+        );
+
+        if (empty($recommendations)) {
+            // Fallback to popular items
+            return $this->popular();
+        }
+
+        $productIds = collect($recommendations)->pluck('id')->toArray();
+        $products = Product::whereIn('id', $productIds)
+            ->with('primaryImage', 'category')
+            ->get();
+
+        return response()->json(['data' => $products]);
+    }
+
+    public function similarTo(Product $product): JsonResponse
+    {
+        $recommendations = $this->recombee->recommendSimilar(
+            $product->id,
+            8
+        );
+
+        if (empty($recommendations)) {
+            // Fallback: same category products
+            $products = Product::where('category_id', $product->category_id)
+                ->where('id', '!=', $product->id)
+                ->where('status', 'active')
+                ->limit(8)
+                ->with('primaryImage')
+                ->get();
+
+            return response()->json(['data' => $products]);
+        }
+
+        $productIds = collect($recommendations)->pluck('id')->toArray();
+        $products = Product::whereIn('id', $productIds)
+            ->with('primaryImage')
+            ->get();
+
+        return response()->json(['data' => $products]);
+    }
+}
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add .
+git commit -m "feat: add Recombee recommendation service and controller"
+```
+
+
+================================================================================
+PHASE 6 — RABBITMQ QUEUE CONFIGURATION
+================================================================================
+
+### Task 6.1: RabbitMQ Queue Setup
+
+- [ ] **Step 1: Configure RabbitMQ in queue.php**
+
+File: backend/config/queue.php — add to 'connections' array:
+
+```php
+'rabbitmq' => [
+    'driver' => 'rabbitmq',
+    'hosts' => [
+        [
+            'host' => env('RABBITMQ_HOST', '127.0.0.1'),
+            'port' => env('RABBITMQ_PORT', 5672),
+            'user' => env('RABBITMQ_USER', 'guest'),
+            'password' => env('RABBITMQ_PASSWORD', 'guest'),
+            'vhost' => env('RABBITMQ_VHOST', '/'),
+        ],
+    ],
+    'queue' => env('RABBITMQ_QUEUE', 'default'),
+    'options' => [
+        'exchange' => [
+            'name' => env('RABBITMQ_EXCHANGE_NAME', ''),
+            'type' => env('RABBITMQ_EXCHANGE_TYPE', 'direct'),
+        ],
+    ],
+    'after_commit' => false,
+],
+```
+
+- [ ] **Step 2: Create the failed_jobs table**
+
+```bash
+php artisan make:queue-failed-table
+php artisan migrate
+```
+
+- [ ] **Step 3: Test queue worker with RabbitMQ**
+
+```bash
+php artisan queue:work rabbitmq --tries=3
+```
+Expected: Worker starts and listens for jobs on the RabbitMQ default queue.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add .
+git commit -m "feat: configure RabbitMQ as queue driver"
+```
+
+
+================================================================================
+PHASE 7 — NEXT.JS FRONTEND
+================================================================================
+
+### Task 7.1: API Client & Auth Provider
+
+- [ ] **Step 1: Create Axios API client**
+
+Create file: frontend/src/lib/api.ts
+
+```typescript
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
+
+// CSRF cookie must be fetched before login/register
+export async function getCsrfCookie(): Promise<void> {
+  await api.get('/sanctum/csrf-cookie');
+}
+
+export default api;
+```
+
+- [ ] **Step 2: Create TypeScript types**
+
+Create file: frontend/src/types/user.ts
+
+```typescript
+export interface User {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string | null;
+  avatar_url: string | null;
+  default_address: Address | null;
+  roles: Role[];
+}
+
+export interface Role {
+  id: number;
+  name: 'user' | 'business' | 'admin';
+}
+
+export interface Address {
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
+}
+```
+
+Create file: frontend/src/types/product.ts
+
+```typescript
+export interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  short_description: string | null;
+  base_price: number;
+  compare_at_price: number | null;
+  sku: string;
+  stock_quantity: number;
+  status: 'draft' | 'active' | 'archived';
+  brand: string | null;
+  is_featured: boolean;
+  category: Category;
+  images: ProductImage[];
+  primary_image: ProductImage | null;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  image_url: string | null;
+  children?: Category[];
+}
+
+export interface ProductImage {
+  id: number;
+  url: string;
+  alt_text: string | null;
+  is_primary: boolean;
+}
+```
+
+Create file: frontend/src/types/cart.ts
+
+```typescript
+export interface CartItem {
+  product_id: number;
+  quantity: number;
+  variant_id: number | null;
+  product: {
+    id: number;
+    name: string;
+    slug: string;
+    base_price: number;
+    image_url: string | null;
+    stock_quantity: number;
+  };
+}
+
+export interface Cart {
+  items: CartItem[];
+  total: number;
+  item_count: number;
+}
+```
+
+Create file: frontend/src/types/order.ts
+
+```typescript
+export interface Order {
+  id: number;
+  order_number: string;
+  status: string;
+  subtotal: number;
+  shipping_fee: number;
+  tax: number;
+  total: number;
+  payment_method: string | null;
+  payment_status: string;
+  shipping_address: Record<string, string>;
+  items: OrderItem[];
+  created_at: string;
+  paid_at: string | null;
+}
+
+export interface OrderItem {
+  id: number;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
+```
+
+- [ ] **Step 3: Create useAuth hook**
+
+Create file: frontend/src/hooks/useAuth.ts
+
+```typescript
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import api, { getCsrfCookie } from '@/lib/api';
+import { User } from '@/types/user';
+
+export function useAuth() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchUser = useCallback(async () => {
+    try {
+      const { data } = await api.get('/api/user');
+      setUser(data);
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  const login = async (email: string, password: string) => {
+    await getCsrfCookie();
+    await api.post('/api/login', { email, password });
+    await fetchUser();
+  };
+
+  const register = async (data: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    password: string;
+    password_confirmation: string;
+    role?: 'user' | 'business';
+  }) => {
+    await getCsrfCookie();
+    await api.post('/api/register', data);
+    await fetchUser();
+  };
+
+  const logout = async () => {
+    await api.post('/api/logout');
+    setUser(null);
+  };
+
+  const hasRole = (role: string): boolean => {
+    return user?.roles?.some(r => r.name === role) ?? false;
+  };
+
+  return { user, loading, login, register, logout, hasRole };
+}
+```
+
+- [ ] **Step 4: Create useCart hook**
+
+Create file: frontend/src/hooks/useCart.ts
+
+```typescript
+'use client';
+
+import { useState, useCallback } from 'react';
+import api from '@/lib/api';
+import { Cart, CartItem } from '@/types/cart';
+
+export function useCart() {
+  const [cart, setCart] = useState<Cart>({ items: [], total: 0, item_count: 0 });
+  const [loading, setLoading] = useState(false);
+
+  const fetchCart = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/api/cart');
+      setCart(data);
+    } catch {
+      // user not logged in or cart empty
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const addItem = async (productId: number, quantity: number = 1, variantId?: number) => {
+    const { data } = await api.post('/api/cart', {
+      product_id: productId,
+      quantity,
+      variant_id: variantId ?? null,
+    });
+    setCart(prev => ({ ...prev, items: data.items }));
+  };
+
+  const updateQuantity = async (productId: number, quantity: number) => {
+    const { data } = await api.put(`/api/cart/${productId}`, { quantity });
+    setCart(prev => ({ ...prev, items: data.items }));
+  };
+
+  const removeItem = async (productId: number) => {
+    const { data } = await api.delete(`/api/cart/${productId}`);
+    setCart(prev => ({ ...prev, items: data.items }));
+  };
+
+  const clearCart = async () => {
+    await api.delete('/api/cart');
+    setCart({ items: [], total: 0, item_count: 0 });
+  };
+
+  return { cart, loading, fetchCart, addItem, updateQuantity, removeItem, clearCart };
+}
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add .
+git commit -m "feat: add API client, TypeScript types, useAuth and useCart hooks"
+```
+
+--------------------------------------------------------------------------------
+
+### Task 7.2: Layout & Navbar Component
+
+- [ ] **Step 1: Configure Tailwind with SARI brand tokens**
+
+File: frontend/tailwind.config.ts
+
+```typescript
+import type { Config } from 'tailwindcss';
+
+const config: Config = {
+  content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
+  theme: {
+    extend: {
+      colors: {
+        sari: {
+          50: '#FFFBEB',
+          100: '#FEF3C7',
+          200: '#FDE68A',
+          300: '#FCD34D',
+          400: '#FBBF24',
+          500: '#F59E0B',   // Primary
+          600: '#D97706',   // Primary hover
+          700: '#B45309',
+          800: '#92400E',
+          900: '#78350F',
+        },
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;
+```
+
+- [ ] **Step 2: Update root layout with Inter font and providers**
+
+File: frontend/src/app/layout.tsx
+
+```tsx
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata: Metadata = {
+  title: 'SARI — Discover Your Perfect Style',
+  description: 'Shop the latest fashion trends with AI-powered recommendations and smart comparison tools. GCash & Card payments accepted.',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body className={inter.className}>
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+- [ ] **Step 3: Create Navbar component**
+
+Create file: frontend/src/components/layout/Navbar.tsx
+
+Design reference: The navbar has the SARI logo (orange "S" icon + "SARI" text)
+on the left, navigation links (Home, Men, Women, All Products) in the center,
+a search bar center-right, and heart icon + cart icon + amber "Login" button
+on the right. The Login button is a rounded amber/orange pill shape.
+
+```tsx
+'use client';
+
+import Link from 'next/link';
+import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { Heart, ShoppingCart, Search, Menu, X } from 'lucide-react';
+
+export default function Navbar() {
+  const { user, logout, hasRole } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      window.location.href = `/products?q=${encodeURIComponent(searchQuery)}`;
+    }
+  };
+
+  return (
+    <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2">
+            <span className="text-sari-500 font-bold text-2xl">S</span>
+            <span className="font-bold text-xl tracking-tight text-gray-900">
+              SARI
+            </span>
+          </Link>
+
+          {/* Desktop Nav Links */}
+          <div className="hidden md:flex items-center gap-8">
+            <Link href="/" className="text-sm font-medium text-gray-700 hover:text-sari-600 transition">
+              Home
+            </Link>
+            <Link href="/products?category=men" className="text-sm font-medium text-gray-700 hover:text-sari-600 transition">
+              Men
+            </Link>
+            <Link href="/products?category=women" className="text-sm font-medium text-gray-700 hover:text-sari-600 transition">
+              Women
+            </Link>
+            <Link href="/products" className="text-sm font-medium text-gray-700 hover:text-sari-600 transition">
+              All Products
+            </Link>
+          </div>
+
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="hidden md:flex items-center relative">
+            <Search className="absolute left-3 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 w-64 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 transition"
+            />
+          </form>
+
+          {/* Right section: icons + auth */}
+          <div className="flex items-center gap-4">
+            {user && (
+              <>
+                <Link href="/wishlist" className="text-gray-600 hover:text-sari-600 transition">
+                  <Heart className="w-5 h-5" />
+                </Link>
+                <Link href="/cart" className="text-gray-600 hover:text-sari-600 transition relative">
+                  <ShoppingCart className="w-5 h-5" />
+                </Link>
+              </>
+            )}
+
+            {user ? (
+              <div className="relative group">
+                <button className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  {user.first_name}
+                </button>
+                <div className="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border py-2 z-50">
+                  <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    Profile
+                  </Link>
+                  <Link href="/orders" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    My Orders
+                  </Link>
+                  {hasRole('business') && (
+                    <Link href="/business/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                      Business Dashboard
+                    </Link>
+                  )}
+                  {hasRole('admin') && (
+                    <Link href="/admin/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                      Admin Panel
+                    </Link>
+                  )}
+                  <button
+                    onClick={logout}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="bg-sari-500 hover:bg-sari-600 text-white text-sm font-medium px-5 py-2 rounded-full transition"
+              >
+                Login
+              </Link>
+            )}
+
+            {/* Mobile menu button */}
+            <button
+              className="md:hidden text-gray-600"
+              onClick={() => setMobileOpen(!mobileOpen)}
+            >
+              {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Nav */}
+      {mobileOpen && (
+        <div className="md:hidden border-t bg-white px-4 py-4 space-y-3">
+          <Link href="/" className="block text-sm font-medium text-gray-700">Home</Link>
+          <Link href="/products?category=men" className="block text-sm font-medium text-gray-700">Men</Link>
+          <Link href="/products?category=women" className="block text-sm font-medium text-gray-700">Women</Link>
+          <Link href="/products" className="block text-sm font-medium text-gray-700">All Products</Link>
+        </div>
+      )}
+    </nav>
+  );
+}
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add .
+git commit -m "feat: add Navbar, Tailwind brand config, root layout"
+```
+
+--------------------------------------------------------------------------------
+
+### Task 7.3: Homepage
+
+- [ ] **Step 1: Build Homepage with hero + category grid + recommendations**
+
+File: frontend/src/app/page.tsx
+
+Design reference: Hero section has full-width amber/orange gradient background.
+"NEW COLLECTION" badge at top-left, large bold heading "Discover Your Perfect
+Style", subtitle, two CTA buttons ("Shop Now" dark bg, "Try AI Comparison"
+orange outline). Below: "Shop by Category" grid with 4 category cards.
+
+```tsx
+import Link from 'next/link';
+import Navbar from '@/components/layout/Navbar';
+
+export default function HomePage() {
+  return (
+    <>
+      <Navbar />
+      <main>
+        {/* Hero Section */}
+        <section className="relative bg-gradient-to-br from-sari-400 via-sari-500 to-sari-600 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
+            <div className="max-w-xl">
+              <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur text-white text-xs font-semibold px-3 py-1 rounded-full mb-6">
+                ✨ NEW COLLECTION
+              </span>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight tracking-tight">
+                Discover Your Perfect Style
+              </h1>
+              <p className="mt-4 text-lg text-white/80">
+                Explore the latest fashion trends with our AI-powered
+                recommendations and smart comparison tools.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <Link
+                  href="/products"
+                  className="bg-gray-900 hover:bg-gray-800 text-white font-medium px-8 py-3 rounded-full transition"
+                >
+                  Shop Now
+                </Link>
+                <Link
+                  href="/products?ai=compare"
+                  className="border-2 border-white text-white hover:bg-white hover:text-sari-600 font-medium px-8 py-3 rounded-full transition"
+                >
+                  Try AI Comparison
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Shop by Category */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <h2 className="text-2xl font-bold text-gray-900 mb-8">
+            Shop by Category
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {/* Category cards — these will be dynamically loaded */}
+            {['T-Shirts', 'Jeans', 'Dresses', 'Jackets'].map((cat) => (
+              <Link
+                key={cat}
+                href={`/categories/${cat.toLowerCase()}`}
+                className="group relative aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100"
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
+                <div className="absolute bottom-4 left-4 z-20">
+                  <h3 className="text-white font-semibold text-lg">{cat}</h3>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* Recommended For You (placeholder for dynamic) */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <h2 className="text-2xl font-bold text-gray-900 mb-8">
+            Recommended For You
+          </h2>
+          <p className="text-gray-500">
+            Sign in to see personalized recommendations powered by AI.
+          </p>
+        </section>
+      </main>
+    </>
+  );
+}
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add .
+git commit -m "feat: add Homepage with hero, categories, and recommendation sections"
+```
+
+--------------------------------------------------------------------------------
+
+### Task 7.4: Login & Register Pages
+
+- [ ] **Step 1: Build Login Page**
+
+File: frontend/src/app/(auth)/login/page.tsx
+
+Design reference: Centered card layout. SARI logo at top, "Welcome Back"
+heading, "Login to your account" subtitle. Email field, Password field,
+amber Login button full-width. "Don't have an account? Sign up" link at bottom.
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
+import Navbar from '@/components/layout/Navbar';
+
+export default function LoginPage() {
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await login(email, password);
+      window.location.href = '/';
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Navbar />
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <span className="text-sari-500 font-bold text-4xl">S</span>
+            <span className="text-sari-500 font-bold text-2xl ml-1">SARI</span>
+            <h1 className="mt-4 text-2xl font-bold text-gray-900">Welcome Back</h1>
+            <p className="text-gray-500 text-sm mt-1">Login to your account</p>
+          </div>
+
+          {/* Form Card */}
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-5">
+            {error && (
+              <div className="bg-red-50 text-red-600 text-sm rounded-lg p-3">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-sari-500 hover:bg-sari-600 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-50"
+            >
+              {loading ? 'Logging in...' : 'Login'}
+            </button>
+
+            <p className="text-center text-sm text-gray-500">
+              Don&apos;t have an account?{' '}
+              <Link href="/register" className="text-sari-600 font-medium hover:underline">
+                Sign up
+              </Link>
+            </p>
+          </form>
+        </div>
+      </div>
+    </>
+  );
+}
+```
+
+- [ ] **Step 2: Build Register Page**
+
+File: frontend/src/app/(auth)/register/page.tsx
+
+Same card layout as login. Additional fields: First Name, Last Name,
+Confirm Password, and a Role selector (User / Business).
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
+import Navbar from '@/components/layout/Navbar';
+
+export default function RegisterPage() {
+  const { register } = useAuth();
+  const [form, setForm] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+    role: 'user' as 'user' | 'business',
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await register(form);
+      window.location.href = '/';
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const update = (field: string, value: string) =>
+    setForm(prev => ({ ...prev, [field]: value }));
+
+  return (
+    <>
+      <Navbar />
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <span className="text-sari-500 font-bold text-4xl">S</span>
+            <span className="text-sari-500 font-bold text-2xl ml-1">SARI</span>
+            <h1 className="mt-4 text-2xl font-bold text-gray-900">Create Account</h1>
+            <p className="text-gray-500 text-sm mt-1">Join SARI today</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-4">
+            {error && (
+              <div className="bg-red-50 text-red-600 text-sm rounded-lg p-3">{error}</div>
+            )}
+
+            {/* Role selector */}
+            <div className="flex gap-3">
+              {(['user', 'business'] as const).map((role) => (
+                <button
+                  key={role}
+                  type="button"
+                  onClick={() => update('role', role)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium border transition ${
+                    form.role === role
+                      ? 'bg-sari-500 text-white border-sari-500'
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-sari-300'
+                  }`}
+                >
+                  {role === 'user' ? 'Shopper' : 'Business'}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                <input
+                  type="text"
+                  value={form.first_name}
+                  onChange={(e) => update('first_name', e.target.value)}
+                  required
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                <input
+                  type="text"
+                  value={form.last_name}
+                  onChange={(e) => update('last_name', e.target.value)}
+                  required
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => update('email', e.target.value)}
+                required
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) => update('password', e.target.value)}
+                required
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+              <input
+                type="password"
+                value={form.password_confirmation}
+                onChange={(e) => update('password_confirmation', e.target.value)}
+                required
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-sari-500 hover:bg-sari-600 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-50"
+            >
+              {loading ? 'Creating account...' : 'Create Account'}
+            </button>
+
+            <p className="text-center text-sm text-gray-500">
+              Already have an account?{' '}
+              <Link href="/login" className="text-sari-600 font-medium hover:underline">
+                Login
+              </Link>
+            </p>
+          </form>
+        </div>
+      </div>
+    </>
+  );
+}
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add .
+git commit -m "feat: add Login and Register pages with role selection"
+```
+
+
+================================================================================
+PHASE 8 — REMAINING CONTROLLERS & PRODUCT CRUD
+================================================================================
+
+### Task 8.1: ProductController (CRUD + Listing)
+
+- [ ] **Step 1: Create ProductController**
+
+Create file: backend/app/Http/Controllers/ProductController.php
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Resources\ProductResource;
+use App\Jobs\SyncInteractionToRecombee;
+use App\Models\Product;
+use App\Services\ImageService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+
+class ProductController extends Controller
+{
+    public function __construct(private ImageService $imageService) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $query = Product::where('status', 'active')
+            ->with('primaryImage', 'category');
+
+        if ($request->category) {
+            $query->whereHas('category', fn ($q) => $q->where('slug', $request->category));
+        }
+
+        if ($request->featured) {
+            $query->where('is_featured', true);
+        }
+
+        $sort = $request->input('sort', 'newest');
+        match ($sort) {
+            'price_asc' => $query->orderBy('base_price', 'asc'),
+            'price_desc' => $query->orderBy('base_price', 'desc'),
+            'popular' => $query->orderByDesc('view_count'),
+            default => $query->orderByDesc('created_at'),
+        };
+
+        return response()->json($query->paginate($request->input('per_page', 20)));
+    }
+
+    public function show(string $slug, Request $request): JsonResponse
+    {
+        $product = Product::where('slug', $slug)
+            ->with('images', 'category', 'variants', 'business')
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $product->increment('view_count');
+
+        // Track view for recommendations
+        if ($request->user()) {
+            SyncInteractionToRecombee::dispatch('view', $request->user()->id, $product->id);
+        }
+
+        return response()->json(new ProductResource($product));
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'short_description' => 'nullable|string|max:500',
+            'category_id' => 'required|exists:categories,id',
+            'base_price' => 'required|numeric|min:0',
+            'compare_at_price' => 'nullable|numeric|min:0',
+            'sku' => 'required|string|unique:products,sku',
+            'stock_quantity' => 'required|integer|min:0',
+            'brand' => 'nullable|string',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        $product = Product::create([
+            ...$request->except('images'),
+            'business_id' => $request->user()->id,
+            'slug' => Str::slug($request->name) . '-' . Str::random(5),
+            'status' => 'active',
+        ]);
+
+        // Upload images
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $i => $file) {
+                $url = $this->imageService->upload($file);
+                $product->images()->create([
+                    'url' => $url,
+                    'is_primary' => $i === 0,
+                    'sort_order' => $i,
+                ]);
+            }
+        }
+
+        return response()->json(new ProductResource($product->load('images', 'category')), 201);
+    }
+
+    public function update(Request $request, Product $product): JsonResponse
+    {
+        $this->authorize('update', $product);
+
+        $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'base_price' => 'sometimes|numeric|min:0',
+            'stock_quantity' => 'sometimes|integer|min:0',
+            'status' => 'sometimes|in:draft,active,archived',
+        ]);
+
+        $product->update($request->validated());
+        return response()->json(new ProductResource($product->fresh()));
+    }
+
+    public function destroy(Product $product): JsonResponse
+    {
+        $this->authorize('delete', $product);
+        $product->delete();
+        return response()->json(['message' => 'Product deleted']);
+    }
+
+    public function myProducts(Request $request): JsonResponse
+    {
+        $products = Product::where('business_id', $request->user()->id)
+            ->with('primaryImage', 'category')
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
+        return response()->json($products);
+    }
+}
+```
+
+- [ ] **Step 2: Create ProductResource**
+
+Create file: backend/app/Http/Resources/ProductResource.php
+
+```php
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class ProductResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'description' => $this->description,
+            'short_description' => $this->short_description,
+            'base_price' => (float) $this->base_price,
+            'compare_at_price' => $this->compare_at_price ? (float) $this->compare_at_price : null,
+            'sku' => $this->sku,
+            'stock_quantity' => $this->stock_quantity,
+            'low_stock_threshold' => $this->low_stock_threshold,
+            'status' => $this->status,
+            'brand' => $this->brand,
+            'is_featured' => $this->is_featured,
+            'view_count' => $this->view_count,
+            'category' => $this->whenLoaded('category'),
+            'images' => $this->whenLoaded('images'),
+            'primary_image' => $this->whenLoaded('primaryImage'),
+            'variants' => $this->whenLoaded('variants'),
+            'business' => $this->whenLoaded('business', fn () => [
+                'id' => $this->business->id,
+                'name' => $this->business->full_name,
+            ]),
+            'created_at' => $this->created_at,
+        ];
+    }
+}
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add .
+git commit -m "feat: add ProductController CRUD and ProductResource"
+```
+
+
+================================================================================
+VERIFICATION PLAN
+================================================================================
+
+### Automated Tests
+
+1. Run Laravel test suite:
+```bash
+cd backend
+php artisan test
+```
+
+2. Verify all migrations run cleanly:
+```bash
+php artisan migrate:fresh --seed
+```
+
+3. Test API endpoints with curl:
+```bash
+# Public product listing
+curl http://localhost:8000/api/products
+
+# Register a user
+curl -X POST http://localhost:8000/api/register \
+  -H "Content-Type: application/json" \
+  -d '{"first_name":"Test","last_name":"User","email":"test@test.com","password":"password","password_confirmation":"password","role":"user"}'
+
+# Get CSRF cookie then login
+curl -c cookies.txt http://localhost:8000/sanctum/csrf-cookie
+curl -b cookies.txt -X POST http://localhost:8000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"password"}'
+```
+
+4. Test Next.js build:
+```bash
+cd frontend
+npm run build
+```
+
+5. Verify Docker services:
+```bash
+docker-compose ps
+# Should show redis, rabbitmq, typesense all healthy
+```
+
+6. Test RabbitMQ queue:
+```bash
+cd backend
+php artisan queue:work rabbitmq --once
+```
+
+### Manual Verification
+
+1. Open http://localhost:3000 — verify homepage renders with hero and categories
+2. Navigate to /login — verify login form matches design reference
+3. Register a new user — verify RBAC role assignment works
+4. Register a business user — verify business dashboard access
+5. Login as admin@sari.ph — verify admin panel access
+6. Test search bar — verify Typesense instant search works
+7. Add item to cart — verify Redis cart persistence
+8. Proceed to checkout — verify PayMongo redirect (use test keys)
+9. Complete test payment — verify webhook processes and order updates
+
+
+================================================================================
+END OF IMPLEMENTATION PLAN
+================================================================================
+
+Total Tasks: 18
+Total Phases: 8
+
+Phase 0: Project Scaffolding (3 tasks)
+Phase 1: Database Schema & Authentication (4 tasks)
+Phase 2: Core Services Layer (2 tasks)
+Phase 3: Payment Integration — PayMongo (1 task)
+Phase 4: Search — Typesense + Laravel Scout (1 task)
+Phase 5: AI Recommendations — Recombee (1 task)
+Phase 6: RabbitMQ Queue Configuration (1 task)
+Phase 7: Next.js Frontend (4 tasks)
+Phase 8: Product CRUD & Remaining Controllers (1 task)
+
+Estimated total implementation time: 40-60 hours for a single developer.
+
