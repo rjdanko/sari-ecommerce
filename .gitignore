@@ -16,6 +16,9 @@ env/
 credentials.json
 token.json
 
+# Worktrees
+.worktrees/
+
 # IDE / Editor
 .vscode/
 .idea/
