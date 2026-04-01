@@ -1,7 +1,7 @@
 # Module 3: Authentication & RBAC (Security-Hardened)
 
 > **For agentic workers:** REQUIRED: Implement this plan task-by-task.
-> Steps use checkbox (`- [ ]`) syntax for tracking.
+> Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Set up Laravel Sanctum SPA authentication with Spatie RBAC,
 including rate limiting, input validation, and secure role assignment.
@@ -42,7 +42,7 @@ for role/permission management. Three roles: user, business, admin.
 
 ### Task 3.1: RBAC Setup — Roles, Permissions, Seeders
 
-- [ ] **Step 1: Create RoleSeeder**
+- [x] **Step 1: Create RoleSeeder**
 
 Create file: `backend/database/seeders/RoleSeeder.php`
 
@@ -100,7 +100,7 @@ class RoleSeeder extends Seeder
 }
 ```
 
-- [ ] **Step 2: Create AdminSeeder**
+- [x] **Step 2: Create AdminSeeder**
 
 Create file: `backend/database/seeders/AdminSeeder.php`
 
@@ -133,7 +133,7 @@ class AdminSeeder extends Seeder
 }
 ```
 
-- [ ] **Step 3: Create CategorySeeder**
+- [x] **Step 3: Create CategorySeeder**
 
 Create file: `backend/database/seeders/CategorySeeder.php`
 
@@ -166,7 +166,7 @@ class CategorySeeder extends Seeder
 }
 ```
 
-- [ ] **Step 4: Update DatabaseSeeder**
+- [x] **Step 4: Update DatabaseSeeder**
 
 File: `backend/database/seeders/DatabaseSeeder.php`
 
@@ -190,14 +190,14 @@ class DatabaseSeeder extends Seeder
 }
 ```
 
-- [ ] **Step 5: Run seeders**
+- [x] **Step 5: Run seeders**
 
 ```bash
 php artisan db:seed
 ```
 Expected: Roles (user, business, admin), permissions, admin user, and categories created.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add .
@@ -208,7 +208,7 @@ git commit -m "feat: add RBAC with Spatie — roles, permissions, seeders"
 
 ### Task 3.2: Middleware, CORS, and Rate Limiting Configuration
 
-- [ ] **Step 1: Register Spatie middleware aliases and rate limiters**
+- [x] **Step 1: Register Spatie middleware aliases and rate limiters**
 
 File: `backend/bootstrap/app.php` — update the `withMiddleware` callback:
 
@@ -260,7 +260,7 @@ use Illuminate\Support\Facades\RateLimiter;
 })
 ```
 
-- [ ] **Step 2: Update config/cors.php**
+- [x] **Step 2: Update config/cors.php**
 
 ```php
 return [
@@ -279,7 +279,7 @@ return [
 > Do NOT use `['*']` in production — this would allow any origin to make
 > authenticated requests.
 
-- [ ] **Step 3: Update config/sanctum.php stateful domains**
+- [x] **Step 3: Update config/sanctum.php stateful domains**
 
 ```php
 'stateful' => explode(',', env(
@@ -288,7 +288,7 @@ return [
 )),
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .
@@ -299,7 +299,7 @@ git commit -m "feat: add middleware aliases, CORS, and rate limiters"
 
 ### Task 3.3: Auth Controllers with Input Validation
 
-- [ ] **Step 1: Create LoginRequest Form Request**
+- [x] **Step 1: Create LoginRequest Form Request**
 
 Create file: `backend/app/Http/Requests/LoginRequest.php`
 
@@ -331,7 +331,7 @@ class LoginRequest extends FormRequest
 }
 ```
 
-- [ ] **Step 2: Create RegisterRequest Form Request**
+- [x] **Step 2: Create RegisterRequest Form Request**
 
 Create file: `backend/app/Http/Requests/RegisterRequest.php`
 
@@ -369,7 +369,7 @@ class RegisterRequest extends FormRequest
 }
 ```
 
-- [ ] **Step 3: Create RegisterController**
+- [x] **Step 3: Create RegisterController**
 
 File: `backend/app/Http/Controllers/Auth/RegisterController.php`
 
@@ -416,7 +416,7 @@ class RegisterController extends Controller
 }
 ```
 
-- [ ] **Step 4: Create LoginController**
+- [x] **Step 4: Create LoginController**
 
 File: `backend/app/Http/Controllers/Auth/LoginController.php`
 
@@ -455,7 +455,7 @@ class LoginController extends Controller
 }
 ```
 
-- [ ] **Step 5: Create LogoutController**
+- [x] **Step 5: Create LogoutController**
 
 File: `backend/app/Http/Controllers/Auth/LogoutController.php`
 
@@ -482,7 +482,7 @@ class LogoutController extends Controller
 }
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add .
@@ -493,7 +493,7 @@ git commit -m "feat: add auth controllers with Form Request validation"
 
 ### Task 3.4: API Routes with Rate Limiting and Authorization
 
-- [ ] **Step 1: Create the complete API route file**
+- [x] **Step 1: Create the complete API route file**
 
 File: `backend/routes/api.php`
 
@@ -602,7 +602,7 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
 });
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add .
