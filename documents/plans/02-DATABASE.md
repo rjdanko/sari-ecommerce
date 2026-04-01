@@ -251,18 +251,60 @@ Schema::create('search_histories', function (Blueprint $table) {
 });
 ```
 
-- [ ] **Step 10: Run all migrations**
+- [ ] **Step 10: Create cart_items migration**
+
+```bash
+php artisan make:migration create_cart_items_table
+```
+
+```php
+Schema::create('cart_items', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
+    $table->string('session_id')->nullable();
+    $table->foreignId('product_id')->constrained()->onDelete('cascade');
+    $table->foreignId('product_variant_id')->nullable()->constrained()->onDelete('cascade');
+    $table->integer('quantity')->default(1);
+    $table->timestamps();
+
+    $table->index('user_id');
+    $table->index('session_id');
+});
+```
+
+- [ ] **Step 11: Create payments migration**
+
+```bash
+php artisan make:migration create_payments_table
+```
+
+```php
+Schema::create('payments', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('order_id')->constrained()->onDelete('cascade');
+    $table->string('payment_method');
+    $table->string('payment_gateway')->default('paymongo');
+    $table->string('transaction_id')->unique()->nullable();
+    $table->string('reference_number')->nullable();
+    $table->decimal('amount', 12, 2);
+    $table->enum('status', ['pending', 'paid', 'failed', 'refunded'])->default('pending');
+    $table->jsonb('gateway_response')->nullable();
+    $table->timestamps();
+});
+```
+
+- [ ] **Step 12: Run all migrations**
 
 ```bash
 php artisan migrate
 ```
 Expected: All tables created successfully in Supabase PostgreSQL.
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 13: Commit**
 
 ```bash
 git add .
-git commit -m "feat: add all database migrations for e-commerce schema"
+git commit -m "feat: add all database migrations for e-commerce schema including carts and payments"
 ```
 
 ---
@@ -344,6 +386,11 @@ class User extends Authenticatable
     public function searchHistories()
     {
         return $this->hasMany(SearchHistory::class);
+    }
+
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
     }
 
     public function getFullNameAttribute(): string
@@ -549,6 +596,11 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     public static function generateOrderNumber(): string
     {
         return 'SARI-' . strtoupper(uniqid());
@@ -584,6 +636,68 @@ class OrderItem extends Model
     public function variant()
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+}
+```
+
+**CartItem.php:**
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class CartItem extends Model
+{
+    protected $fillable = [
+        'user_id', 'session_id', 'product_id', 'product_variant_id', 'quantity'
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function variant()
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+}
+```
+
+**Payment.php:**
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Payment extends Model
+{
+    protected $fillable = [
+        'order_id', 'payment_method', 'payment_gateway',
+        'transaction_id', 'reference_number', 'amount', 'status',
+        'gateway_response'
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'gateway_response' => 'array',
+        ];
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
     }
 }
 ```
