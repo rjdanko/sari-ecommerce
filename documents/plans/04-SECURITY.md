@@ -49,7 +49,7 @@ Form Request classes for input validation on every mutation endpoint.
 
 ### Task 4.1: Authorization Policies (IDOR Prevention)
 
-- [ ] **Step 1: Create ProductPolicy**
+- [x] **Step 1: Create ProductPolicy**
 
 Create file: `backend/app/Policies/ProductPolicy.php`
 
@@ -114,7 +114,7 @@ class ProductPolicy
 }
 ```
 
-- [ ] **Step 2: Create OrderPolicy**
+- [x] **Step 2: Create OrderPolicy**
 
 Create file: `backend/app/Policies/OrderPolicy.php`
 
@@ -188,7 +188,7 @@ class OrderPolicy
 }
 ```
 
-- [ ] **Step 3: Register policies in AuthServiceProvider or auto-discovery**
+- [x] **Step 3: Register policies in AuthServiceProvider or auto-discovery**
 
 Laravel 12 uses auto-discovery by convention (Policy class name matches
 Model name + "Policy"). Verify auto-discovery works by checking that
@@ -206,7 +206,7 @@ public function boot(): void
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .
@@ -217,7 +217,7 @@ git commit -m "feat: add ProductPolicy and OrderPolicy for IDOR prevention"
 
 ### Task 4.2: Form Request Validation Classes
 
-- [ ] **Step 1: Create StoreProductRequest**
+- [x] **Step 1: Create StoreProductRequest**
 
 Create file: `backend/app/Http/Requests/StoreProductRequest.php`
 
@@ -262,7 +262,7 @@ class StoreProductRequest extends FormRequest
 }
 ```
 
-- [ ] **Step 2: Create UpdateProductRequest**
+- [x] **Step 2: Create UpdateProductRequest**
 
 Create file: `backend/app/Http/Requests/UpdateProductRequest.php`
 
@@ -299,7 +299,7 @@ class UpdateProductRequest extends FormRequest
 }
 ```
 
-- [ ] **Step 3: Create StoreCartItemRequest**
+- [x] **Step 3: Create StoreCartItemRequest**
 
 Create file: `backend/app/Http/Requests/StoreCartItemRequest.php`
 
@@ -328,7 +328,7 @@ class StoreCartItemRequest extends FormRequest
 }
 ```
 
-- [ ] **Step 4: Create UpdateCartItemRequest**
+- [x] **Step 4: Create UpdateCartItemRequest**
 
 Create file: `backend/app/Http/Requests/UpdateCartItemRequest.php`
 
@@ -355,7 +355,7 @@ class UpdateCartItemRequest extends FormRequest
 }
 ```
 
-- [ ] **Step 5: Create CheckoutRequest**
+- [x] **Step 5: Create CheckoutRequest**
 
 Create file: `backend/app/Http/Requests/CheckoutRequest.php`
 
@@ -395,7 +395,7 @@ class CheckoutRequest extends FormRequest
 }
 ```
 
-- [ ] **Step 6: Create SearchRequest**
+- [x] **Step 6: Create SearchRequest**
 
 Create file: `backend/app/Http/Requests/SearchRequest.php`
 
@@ -427,7 +427,7 @@ class SearchRequest extends FormRequest
 }
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add .
@@ -438,7 +438,7 @@ git commit -m "feat: add Form Request validation for all mutation endpoints"
 
 ### Task 4.3: Security Tests
 
-- [ ] **Step 1: Create IDOR prevention test**
+- [x] **Step 1: Create IDOR prevention test**
 
 Create file: `backend/tests/Feature/Security/IDORTest.php`
 
@@ -515,7 +515,7 @@ class IDORTest extends TestCase
 }
 ```
 
-- [ ] **Step 2: Create authorization test**
+- [x] **Step 2: Create authorization test**
 
 Create file: `backend/tests/Feature/Security/AuthorizationTest.php`
 
@@ -595,7 +595,7 @@ class AuthorizationTest extends TestCase
 }
 ```
 
-- [ ] **Step 3: Create rate limit test**
+- [x] **Step 3: Create rate limit test**
 
 Create file: `backend/tests/Feature/Security/RateLimitTest.php`
 
@@ -632,7 +632,7 @@ class RateLimitTest extends TestCase
 }
 ```
 
-- [ ] **Step 4: Run all security tests**
+- [x] **Step 4: Run all security tests**
 
 ```bash
 cd backend
@@ -640,7 +640,7 @@ php artisan test --filter=Security
 ```
 Expected: All tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
