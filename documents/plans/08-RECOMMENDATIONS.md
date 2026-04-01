@@ -37,7 +37,7 @@ products if Recombee is unavailable.
 
 ### Task 8.1: Recombee Recommendation Service
 
-- [ ] **Step 1: Add Recombee config to services.php**
+- [x] **Step 1: Add Recombee config to services.php**
 
 File: `backend/config/services.php` — add:
 
@@ -49,7 +49,7 @@ File: `backend/config/services.php` — add:
 ],
 ```
 
-- [ ] **Step 2: Create RecommendationService**
+- [x] **Step 2: Create RecommendationService**
 
 Create file: `backend/app/Services/RecommendationService.php`
 
@@ -167,7 +167,7 @@ class RecommendationService
 }
 ```
 
-- [ ] **Step 3: Create SyncInteractionToRecombee job**
+- [x] **Step 3: Create SyncInteractionToRecombee job**
 
 Create file: `backend/app/Jobs/SyncInteractionToRecombee.php`
 
@@ -206,7 +206,7 @@ class SyncInteractionToRecombee implements ShouldQueue
 }
 ```
 
-- [ ] **Step 4: Create RecommendationController**
+- [x] **Step 4: Create RecommendationController**
 
 Create file: `backend/app/Http/Controllers/RecommendationController.php`
 
@@ -294,7 +294,7 @@ class RecommendationController extends Controller
 }
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
