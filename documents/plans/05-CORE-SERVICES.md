@@ -33,7 +33,7 @@ wraps Supabase S3-compatible storage for product image uploads.
 
 ### Task 5.1: Redis Cart Service
 
-- [ ] **Step 1: Configure Redis databases**
+- [x] **Step 1: Configure Redis databases**
 
 File: `backend/config/database.php` — update the redis section:
 
@@ -64,7 +64,7 @@ File: `backend/config/database.php` — update the redis section:
 ],
 ```
 
-- [ ] **Step 2: Create CartService**
+- [x] **Step 2: Create CartService**
 
 Create file: `backend/app/Services/CartService.php`
 
@@ -202,7 +202,7 @@ class CartService
 }
 ```
 
-- [ ] **Step 3: Create CartController**
+- [x] **Step 3: Create CartController**
 
 Create file: `backend/app/Http/Controllers/CartController.php`
 
@@ -287,7 +287,7 @@ class CartController extends Controller
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .
@@ -298,7 +298,7 @@ git commit -m "feat: add Redis-backed CartService and CartController with valida
 
 ### Task 5.2: Supabase Image Storage Service
 
-- [ ] **Step 1: Configure Supabase S3 disk**
+- [x] **Step 1: Configure Supabase S3 disk**
 
 File: `backend/config/filesystems.php` — add to 'disks' array:
 
@@ -317,7 +317,7 @@ File: `backend/config/filesystems.php` — add to 'disks' array:
 > **🔒 SECURITY:** `SUPABASE_ACCESS_KEY` and `SUPABASE_SECRET_KEY` are
 > backend-only. They are NEVER exposed to the frontend.
 
-- [ ] **Step 2: Create ImageService**
+- [x] **Step 2: Create ImageService**
 
 Create file: `backend/app/Services/ImageService.php`
 
@@ -362,7 +362,7 @@ class ImageService
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add .
