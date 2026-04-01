@@ -35,7 +35,7 @@ Typesense directly using a search-only API key for instant search.
 
 ### Task 7.1: Typesense Configuration
 
-- [ ] **Step 1: Configure Scout for Typesense**
+- [x] **Step 1: Configure Scout for Typesense**
 
 File: `backend/config/scout.php` — set the driver and Typesense config:
 
@@ -62,7 +62,7 @@ File: `backend/config/scout.php` — set the driver and Typesense config:
 > **🔒 NOTE:** `TYPESENSE_API_KEY` in `.env` is the **admin key**. It stays on
 > the backend ONLY. The frontend uses `NEXT_PUBLIC_TYPESENSE_SEARCH_ONLY_KEY`.
 
-- [ ] **Step 2: Create SearchController**
+- [x] **Step 2: Create SearchController**
 
 Create file: `backend/app/Http/Controllers/SearchController.php`
 
@@ -117,7 +117,7 @@ class SearchController extends Controller
 }
 ```
 
-- [ ] **Step 3: Create frontend Typesense client**
+- [x] **Step 3: Create frontend Typesense client**
 
 Create file: `frontend/src/lib/typesense.ts`
 
@@ -143,14 +143,14 @@ const typesenseClient = new Typesense.Client({
 export default typesenseClient;
 ```
 
-- [ ] **Step 4: Import existing products to Typesense**
+- [x] **Step 4: Import existing products to Typesense**
 
 ```bash
 php artisan scout:import "App\Models\Product"
 ```
 Expected: All active products synced to Typesense collection.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
