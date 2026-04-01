@@ -48,4 +48,10 @@ return [
         'base_url' => 'https://api.paymongo.com/v1',
     ],
 
+    'recombee' => [
+        'database_id' => env('RECOMBEE_DATABASE_ID'),
+        'private_token' => env('RECOMBEE_PRIVATE_TOKEN'),
+        'region' => env('RECOMBEE_REGION', 'ap-se'),
+    ],
+
 ];
