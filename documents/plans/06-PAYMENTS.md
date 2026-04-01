@@ -35,7 +35,7 @@ webhook callback → queue job processes payment → inventory deducted.
 
 ### Task 6.1: PayMongo Payment Service
 
-- [ ] **Step 1: Add PayMongo config to services.php**
+- [x] **Step 1: Add PayMongo config to services.php**
 
 File: `backend/config/services.php` — add:
 
@@ -51,7 +51,7 @@ File: `backend/config/services.php` — add:
 > **🔒 SECURITY:** `PAYMONGO_SECRET_KEY` and `PAYMONGO_WEBHOOK_SECRET` are
 > backend-only. Never in `NEXT_PUBLIC_*` env vars.
 
-- [ ] **Step 2: Create PaymentService**
+- [x] **Step 2: Create PaymentService**
 
 Create file: `backend/app/Services/PaymentService.php`
 
@@ -170,7 +170,7 @@ class PaymentService
 }
 ```
 
-- [ ] **Step 3: Create CheckoutController**
+- [x] **Step 3: Create CheckoutController**
 
 Create file: `backend/app/Http/Controllers/CheckoutController.php`
 
@@ -269,7 +269,7 @@ class CheckoutController extends Controller
 }
 ```
 
-- [ ] **Step 4: Create ProcessPaymentWebhook job**
+- [x] **Step 4: Create ProcessPaymentWebhook job**
 
 Create file: `backend/app/Jobs/ProcessPaymentWebhook.php`
 
@@ -341,7 +341,7 @@ class ProcessPaymentWebhook implements ShouldQueue
 }
 ```
 
-- [ ] **Step 5: Create WebhookController**
+- [x] **Step 5: Create WebhookController**
 
 Create file: `backend/app/Http/Controllers/WebhookController.php`
 
@@ -384,7 +384,7 @@ class WebhookController extends Controller
 }
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add .
