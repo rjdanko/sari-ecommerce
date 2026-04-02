@@ -6,12 +6,12 @@ import { cn } from '@/lib/utils';
 import { formatPrice } from '@/lib/utils';
 
 const categories = [
-  { name: 'All Products', slug: 'all', count: 124 },
-  { name: 'T-Shirts', slug: 't-shirts', count: 34 },
-  { name: 'Jeans', slug: 'jeans', count: 21 },
-  { name: 'Dresses', slug: 'dresses', count: 28 },
-  { name: 'Jackets', slug: 'jackets', count: 15 },
-  { name: 'Accessories', slug: 'accessories', count: 26 },
+  { name: 'All Products', slug: 'all' },
+  { name: 'T-Shirts', slug: 't-shirts' },
+  { name: 'Jeans', slug: 'jeans' },
+  { name: 'Dresses', slug: 'dresses' },
+  { name: 'Jackets', slug: 'jackets' },
+  { name: 'Accessories', slug: 'accessories' },
 ];
 
 const sortOptions = [
@@ -118,16 +118,6 @@ export default function SidebarFilter({
                       <span className="w-1.5 h-1.5 rounded-full bg-sari-500" />
                     )}
                     {cat.name}
-                  </span>
-                  <span
-                    className={cn(
-                      'text-xs tabular-nums',
-                      activeCategory === cat.slug
-                        ? 'text-sari-500'
-                        : 'text-gray-400',
-                    )}
-                  >
-                    {cat.count}
                   </span>
                 </button>
               </li>

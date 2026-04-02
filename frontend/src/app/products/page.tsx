@@ -255,6 +255,9 @@ export default function ProductsPage() {
         return b.base_price - a.base_price;
       case 'popular':
         return b.stock_quantity - a.stock_quantity;
+      case 'rating':
+        // Deterministic rating formula matching ProductCard
+        return ((b.id * 7 + 3) % 20 + 30) - ((a.id * 7 + 3) % 20 + 30);
       default:
         return b.id - a.id;
     }
