@@ -41,7 +41,7 @@ Query for state management.
 
 ### Task 11.1: API Client & TypeScript Types
 
-- [ ] **Step 1: Create Axios API client**
+- [x] **Step 1: Create Axios API client**
 
 Create file: `frontend/src/lib/api.ts`
 
@@ -70,7 +70,7 @@ export async function getCsrfCookie(): Promise<void> {
 export default api;
 ```
 
-- [ ] **Step 2: Create utility functions**
+- [x] **Step 2: Create utility functions**
 
 Create file: `frontend/src/lib/utils.ts`
 
@@ -87,7 +87,7 @@ export function cn(...classes: (string | undefined | false)[]): string {
 }
 ```
 
-- [ ] **Step 3: Create TypeScript types**
+- [x] **Step 3: Create TypeScript types**
 
 Create file: `frontend/src/types/user.ts`
 
@@ -208,7 +208,7 @@ export interface OrderItem {
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .
@@ -219,7 +219,7 @@ git commit -m "feat: add API client, utility functions, and TypeScript types"
 
 ### Task 11.2: Auth & Cart Hooks
 
-- [ ] **Step 1: Create useAuth hook**
+- [x] **Step 1: Create useAuth hook**
 
 Create file: `frontend/src/hooks/useAuth.ts`
 
@@ -291,7 +291,7 @@ export function useAuth() {
 }
 ```
 
-- [ ] **Step 2: Create useCart hook**
+- [x] **Step 2: Create useCart hook**
 
 Create file: `frontend/src/hooks/useCart.ts`
 
@@ -346,7 +346,7 @@ export function useCart() {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add .
@@ -357,7 +357,7 @@ git commit -m "feat: add useAuth and useCart hooks"
 
 ### Task 11.3: Tailwind Config & Root Layout
 
-- [ ] **Step 1: Configure Tailwind with SARI brand tokens**
+- [x] **Step 1: Configure Tailwind with SARI brand tokens**
 
 File: `frontend/tailwind.config.ts`
 
@@ -393,7 +393,7 @@ const config: Config = {
 export default config;
 ```
 
-- [ ] **Step 2: Update root layout with Inter font**
+- [x] **Step 2: Update root layout with Inter font**
 
 File: `frontend/src/app/layout.tsx`
 
@@ -424,7 +424,7 @@ export default function RootLayout({
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add .
