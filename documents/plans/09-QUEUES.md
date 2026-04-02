@@ -31,7 +31,7 @@ and processed by `php artisan queue:work rabbitmq`.
 
 ### Task 9.1: RabbitMQ Queue Setup
 
-- [ ] **Step 1: Configure RabbitMQ in queue.php**
+- [x] **Step 1: Configure RabbitMQ in queue.php**
 
 File: `backend/config/queue.php` — add to 'connections' array:
 
@@ -62,21 +62,21 @@ File: `backend/config/queue.php` — add to 'connections' array:
 > `RABBITMQ_PASSWORD` from the defaults. Use strong, unique credentials.
 > The RabbitMQ management UI (port 15672) should be firewalled in production.
 
-- [ ] **Step 2: Create the failed_jobs table**
+- [x] **Step 2: Create the failed_jobs table**
 
 ```bash
 php artisan make:queue-failed-table
 php artisan migrate
 ```
 
-- [ ] **Step 3: Test queue worker with RabbitMQ**
+- [x] **Step 3: Test queue worker with RabbitMQ**
 
 ```bash
 php artisan queue:work rabbitmq --tries=3
 ```
 Expected: Worker starts and listens for jobs on the RabbitMQ default queue.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .
