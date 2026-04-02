@@ -1,7 +1,7 @@
 # Module 10: Product CRUD & Business Logic
 
 > **For agentic workers:** REQUIRED: Implement this plan task-by-task.
-> Steps use checkbox (`- [ ]`) syntax for tracking.
+> Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Create the ProductController, OrderController, WishlistController, and
 CategoryController with full authorization enforcement, IDOR prevention, and
@@ -42,7 +42,7 @@ Every controller in this module MUST:
 
 ### Task 10.1: ProductController (CRUD + Listing)
 
-- [ ] **Step 1: Create ProductController**
+- [x] **Step 1: Create ProductController**
 
 Create file: `backend/app/Http/Controllers/ProductController.php`
 
@@ -189,7 +189,7 @@ class ProductController extends Controller
 }
 ```
 
-- [ ] **Step 2: Create ProductResource**
+- [x] **Step 2: Create ProductResource**
 
 Create file: `backend/app/Http/Resources/ProductResource.php`
 
@@ -234,7 +234,7 @@ class ProductResource extends JsonResource
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add .
@@ -245,7 +245,7 @@ git commit -m "feat: add ProductController CRUD with authorization and ProductRe
 
 ### Task 10.2: OrderController with IDOR Prevention
 
-- [ ] **Step 1: Create OrderController**
+- [x] **Step 1: Create OrderController**
 
 Create file: `backend/app/Http/Controllers/OrderController.php`
 
@@ -330,7 +330,7 @@ class OrderController extends Controller
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add .
@@ -341,7 +341,7 @@ git commit -m "feat: add OrderController with IDOR prevention via Policy"
 
 ### Task 10.3: WishlistController & CategoryController
 
-- [ ] **Step 1: Create WishlistController**
+- [x] **Step 1: Create WishlistController**
 
 Create file: `backend/app/Http/Controllers/WishlistController.php`
 
@@ -398,7 +398,7 @@ class WishlistController extends Controller
 }
 ```
 
-- [ ] **Step 2: Create CategoryController**
+- [x] **Step 2: Create CategoryController**
 
 Create file: `backend/app/Http/Controllers/CategoryController.php`
 
@@ -435,7 +435,7 @@ class CategoryController extends Controller
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add .
@@ -446,7 +446,7 @@ git commit -m "feat: add WishlistController and CategoryController"
 
 ### Task 10.4: Admin Controllers
 
-- [ ] **Step 1: Create Admin DashboardController**
+- [x] **Step 1: Create Admin DashboardController**
 
 Create file: `backend/app/Http/Controllers/Admin/DashboardController.php`
 
@@ -481,7 +481,7 @@ class DashboardController extends Controller
 }
 ```
 
-- [ ] **Step 2: Create Admin UserController**
+- [x] **Step 2: Create Admin UserController**
 
 Create file: `backend/app/Http/Controllers/Admin/UserController.php`
 
@@ -555,7 +555,7 @@ class UserController extends Controller
 }
 ```
 
-- [ ] **Step 3: Create Admin InventoryController**
+- [x] **Step 3: Create Admin InventoryController**
 
 Create file: `backend/app/Http/Controllers/Admin/InventoryController.php`
 
@@ -598,7 +598,7 @@ class InventoryController extends Controller
 }
 ```
 
-- [ ] **Step 4: Create remaining API Resources**
+- [x] **Step 4: Create remaining API Resources**
 
 Create file: `backend/app/Http/Resources/UserResource.php`
 
@@ -692,7 +692,7 @@ class CategoryResource extends JsonResource
 }
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .
