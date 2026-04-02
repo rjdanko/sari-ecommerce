@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import { cn, formatPrice } from '@/lib/utils';
 import {
@@ -91,7 +92,7 @@ export default function CheckoutPage() {
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
             {/* Breadcrumb */}
             <div className="flex items-center gap-1.5 text-sm text-gray-400 mb-4">
-              <span className="hover:text-sari-600 cursor-pointer transition-colors">Cart</span>
+              <Link href="/cart" className="hover:text-sari-600 transition-colors">Cart</Link>
               <ChevronRight className="w-3.5 h-3.5" />
               <span className="text-gray-700 font-medium">Checkout</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -232,79 +233,83 @@ export default function CheckoutPage() {
                     />
                   </div>
 
-                  {/* Address Line 1 */}
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Address Line 1
-                    </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                      <input
-                        type="text"
-                        value={form.address1}
-                        onChange={(e) => updateForm('address1', e.target.value)}
-                        placeholder="House/Unit No., Street, Barangay"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
-                      />
-                    </div>
-                  </div>
+                  {deliveryMethod === 'delivery' && (
+                    <>
+                      {/* Address Line 1 */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Address Line 1
+                        </label>
+                        <div className="relative">
+                          <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                          <input
+                            type="text"
+                            value={form.address1}
+                            onChange={(e) => updateForm('address1', e.target.value)}
+                            placeholder="House/Unit No., Street, Barangay"
+                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                          />
+                        </div>
+                      </div>
 
-                  {/* Address Line 2 */}
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Address Line 2{' '}
-                      <span className="text-gray-300 font-normal">(Optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={form.address2}
-                      onChange={(e) => updateForm('address2', e.target.value)}
-                      placeholder="Building, Floor, Landmark"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
-                    />
-                  </div>
+                      {/* Address Line 2 */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Address Line 2{' '}
+                          <span className="text-gray-300 font-normal">(Optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={form.address2}
+                          onChange={(e) => updateForm('address2', e.target.value)}
+                          placeholder="Building, Floor, Landmark"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                        />
+                      </div>
 
-                  {/* City */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      City
-                    </label>
-                    <input
-                      type="text"
-                      value={form.city}
-                      onChange={(e) => updateForm('city', e.target.value)}
-                      placeholder="Quezon City"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
-                    />
-                  </div>
+                      {/* City */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          City
+                        </label>
+                        <input
+                          type="text"
+                          value={form.city}
+                          onChange={(e) => updateForm('city', e.target.value)}
+                          placeholder="Quezon City"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                        />
+                      </div>
 
-                  {/* Province */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Province
-                    </label>
-                    <input
-                      type="text"
-                      value={form.province}
-                      onChange={(e) => updateForm('province', e.target.value)}
-                      placeholder="Metro Manila"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
-                    />
-                  </div>
+                      {/* Province */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Province
+                        </label>
+                        <input
+                          type="text"
+                          value={form.province}
+                          onChange={(e) => updateForm('province', e.target.value)}
+                          placeholder="Metro Manila"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                        />
+                      </div>
 
-                  {/* Zip Code */}
-                  <div className="sm:col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Zip Code
-                    </label>
-                    <input
-                      type="text"
-                      value={form.zip}
-                      onChange={(e) => updateForm('zip', e.target.value)}
-                      placeholder="1100"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
-                    />
-                  </div>
+                      {/* Zip Code */}
+                      <div className="sm:col-span-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Zip Code
+                        </label>
+                        <input
+                          type="text"
+                          value={form.zip}
+                          onChange={(e) => updateForm('zip', e.target.value)}
+                          placeholder="1100"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </section>
 

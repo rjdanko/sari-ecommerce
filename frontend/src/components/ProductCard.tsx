@@ -19,9 +19,10 @@ export default function ProductCard({
   isComparing = false,
 }: ProductCardProps) {
   const [wishlisted, setWishlisted] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
+  const hasRealImage = !!product.primary_image?.url;
   const imageUrl = product.primary_image?.url ?? '/placeholder-product.png';
+  const [imageLoaded, setImageLoaded] = useState(!hasRealImage);
   // Deterministic placeholder rating derived from product id
   const rating = ((product.id * 7 + 3) % 20 + 30) / 10; // 3.0–4.9
   const reviewCount = (product.id * 13 + 5) % 90 + 5; // 5–94

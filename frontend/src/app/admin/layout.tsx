@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -11,6 +12,8 @@ import {
   BarChart3,
   LogOut,
   ChevronRight,
+  Menu,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,12 +32,39 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-gray-50/80">
+      {/* Mobile header */}
+      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-gray-200 bg-white px-4 lg:hidden">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="rounded-lg p-1.5 text-gray-600 hover:bg-gray-100"
+          aria-label="Open sidebar"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <span className="font-display text-lg tracking-tight text-gray-900">SARI</span>
+        <span className="rounded-full bg-sari-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-sari-700">
+          Admin
+        </span>
+      </div>
+
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-gray-200/80 bg-white shadow-[1px_0_12px_-4px_rgba(245,158,11,0.06)]">
-        {/* Logo */}
+      <aside className={cn(
+        'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-gray-200/80 bg-white shadow-[1px_0_12px_-4px_rgba(245,158,11,0.06)] transition-transform duration-300 lg:z-30 lg:translate-x-0',
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      )}>
+        {/* Logo + Mobile close */}
         <div className="flex h-16 items-center gap-2.5 border-b border-gray-100 px-6">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sari-400 to-sari-600 shadow-sm">
             <span className="text-sm font-bold tracking-tight text-white">S</span>
@@ -45,6 +75,13 @@ export default function AdminLayout({
               Admin
             </span>
           </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="ml-auto rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 lg:hidden"
+            aria-label="Close sidebar"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
         {/* Navigation */}
@@ -109,7 +146,7 @@ export default function AdminLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="ml-64 flex-1">
+      <main className="flex-1 pt-14 lg:ml-64 lg:pt-0">
         <div className="min-h-screen">{children}</div>
       </main>
     </div>
