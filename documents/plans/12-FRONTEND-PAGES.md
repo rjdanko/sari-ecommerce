@@ -44,7 +44,7 @@ the component library. Match the SARI design reference.
 
 ### Task 12.1: Navbar Component
 
-- [ ] **Step 1: Create Navbar component**
+- [x] **Step 1: Create Navbar component**
 
 Create file: `frontend/src/components/layout/Navbar.tsx`
 
@@ -191,7 +191,7 @@ export default function Navbar() {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add .
@@ -202,7 +202,7 @@ git commit -m "feat: add Navbar component with search and responsive mobile menu
 
 ### Task 12.2: Homepage
 
-- [ ] **Step 1: Build Homepage with hero + category grid + recommendations**
+- [x] **Step 1: Build Homepage with hero + category grid + recommendations**
 
 File: `frontend/src/app/page.tsx`
 
@@ -283,7 +283,7 @@ export default function HomePage() {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add .
@@ -294,7 +294,7 @@ git commit -m "feat: add Homepage with hero, categories, and recommendation sect
 
 ### Task 12.3: Login & Register Pages
 
-- [ ] **Step 1: Build Login Page**
+- [x] **Step 1: Build Login Page**
 
 File: `frontend/src/app/(auth)/login/page.tsx`
 
@@ -406,7 +406,7 @@ export default function LoginPage() {
 }
 ```
 
-- [ ] **Step 2: Build Register Page**
+- [x] **Step 2: Build Register Page**
 
 File: `frontend/src/app/(auth)/register/page.tsx`
 
@@ -572,7 +572,7 @@ export default function RegisterPage() {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add .
