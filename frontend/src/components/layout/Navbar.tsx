@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Heart, ShoppingCart, Search, Menu, X } from 'lucide-react';
 
 export default function Navbar() {
-  const { user, logout, hasRole } = useAuth();
+  const { user, loading, logout, hasRole } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -81,7 +81,9 @@ export default function Navbar() {
               </>
             )}
 
-            {user ? (
+            {loading ? (
+              <div className="w-20 h-9 bg-gray-100 animate-pulse rounded-full" />
+            ) : user ? (
               <div className="relative group">
                 <button className="flex items-center gap-2 text-sm font-medium text-gray-700 px-3 py-1.5 rounded-full hover:bg-gray-50 transition-colors duration-200">
                   <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-sari-100 text-sari-700 text-xs font-semibold">
