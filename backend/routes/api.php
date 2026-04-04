@@ -48,6 +48,7 @@ Route::post('/webhooks/paymongo', [WebhookController::class, 'handlePaymongo']);
 Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function () {
     Route::post('/logout', LogoutController::class);
     Route::get('/user', fn (Request $request) => $request->user()->load('roles'));
+    Route::put('/user/profile', [App\Http\Controllers\ProfileController::class, 'update']);
 
     // Cart (Redis-backed)
     Route::get('/cart', [CartController::class, 'index']);
@@ -89,5 +90,13 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
         Route::apiResource('/users', App\Http\Controllers\Admin\UserController::class);
         Route::get('/inventory', [App\Http\Controllers\Admin\InventoryController::class, 'index']);
         Route::put('/inventory/{product}', [App\Http\Controllers\Admin\InventoryController::class, 'update']);
+
+        Route::get('/products', [App\Http\Controllers\Admin\ProductController::class, 'index']);
+        Route::put('/products/{product}', [App\Http\Controllers\Admin\ProductController::class, 'update']);
+        Route::delete('/products/{product}', [App\Http\Controllers\Admin\ProductController::class, 'destroy']);
+
+        Route::get('/orders', [App\Http\Controllers\Admin\OrderController::class, 'index']);
+        Route::get('/orders/{order}', [App\Http\Controllers\Admin\OrderController::class, 'show']);
+        Route::put('/orders/{order}/status', [App\Http\Controllers\Admin\OrderController::class, 'updateStatus']);
     });
 });

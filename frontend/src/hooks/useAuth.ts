@@ -51,9 +51,28 @@ export function useAuth() {
    * NOTE: hasRole is for UI rendering only (show/hide buttons).
    * The backend enforces actual authorization via middleware and policies.
    */
+  const updateProfile = async (data: {
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    default_address?: {
+      label?: string;
+      line1: string;
+      line2?: string;
+      city: string;
+      state: string;
+      postal_code: string;
+      country?: string;
+    } | null;
+  }) => {
+    const response = await api.put('/api/user/profile', data);
+    setUser(response.data.user);
+    return response.data;
+  };
+
   const hasRole = (role: string): boolean => {
     return user?.roles?.some(r => r.name === role) ?? false;
   };
 
-  return { user, loading, login, register, logout, hasRole };
+  return { user, loading, login, register, logout, hasRole, updateProfile };
 }

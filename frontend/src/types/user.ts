@@ -7,6 +7,7 @@ export interface User {
   avatar_url: string | null;
   default_address: Address | null;
   roles: Role[];
+  created_at: string;
 }
 
 export interface Role {
