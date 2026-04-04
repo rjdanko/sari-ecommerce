@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import ProductCard from '@/components/ProductCard';
 import SidebarFilter from '@/components/SidebarFilter';
+import ProductComparisonModal from '@/components/ProductComparisonModal';
 import { SlidersHorizontal, LayoutGrid, Rows3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Product } from '@/types/product';
@@ -218,12 +220,30 @@ const mockProducts: Product[] = [
 
 // ── Page Component ──────────────────────────────────────────
 export default function ProductsPage() {
+  return (
+    <Suspense>
+      <ProductsPageContent />
+    </Suspense>
+  );
+}
+
+function ProductsPageContent() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
   const [compareIds, setCompareIds] = useState<Set<number>>(new Set());
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [gridCols, setGridCols] = useState<3 | 4>(3);
+  const [comparisonOpen, setComparisonOpen] = useState(false);
+  const searchParams = useSearchParams();
+
+  // Handle ?ai=compare query param — enable comparison mode
+  useEffect(() => {
+    if (searchParams.get('ai') === 'compare') {
+      // Auto-select first 2 products for comparison when arriving from homepage
+      setCompareIds(new Set(mockProducts.slice(0, 2).map((p) => p.id)));
+    }
+  }, [searchParams]);
 
   const handleCompareToggle = (productId: number, checked: boolean) => {
     setCompareIds((prev) => {
@@ -371,7 +391,11 @@ export default function ProductsPage() {
                     >
                       Clear
                     </button>
-                    <button className="px-4 py-1.5 bg-gradient-to-r from-sari-500 to-sari-600 text-white text-sm font-medium rounded-full hover:from-sari-600 hover:to-sari-700 shadow-sm hover:shadow-md transition-all duration-200">
+                    <button
+                      onClick={() => setComparisonOpen(true)}
+                      disabled={compareIds.size < 2}
+                      className="px-4 py-1.5 bg-gradient-to-r from-sari-500 to-sari-600 text-white text-sm font-medium rounded-full hover:from-sari-600 hover:to-sari-700 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       Compare Now
                     </button>
                   </div>
@@ -429,6 +453,14 @@ export default function ProductsPage() {
           </div>
         </div>
       </main>
+
+      {/* AI Comparison Modal */}
+      {comparisonOpen && compareIds.size >= 2 && (
+        <ProductComparisonModal
+          products={mockProducts.filter((p) => compareIds.has(p.id))}
+          onClose={() => setComparisonOpen(false)}
+        />
+      )}
     </>
   );
 }

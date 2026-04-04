@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import { useCart } from '@/hooks/useCart';
 import { cn, formatPrice } from '@/lib/utils';
+import api from '@/lib/api';
 import {
   Truck,
   Store,
@@ -13,50 +15,19 @@ import {
   ShieldCheck,
   ChevronRight,
   Package,
+  Loader2,
+  ShoppingBag,
 } from 'lucide-react';
 
 type DeliveryMethod = 'delivery' | 'pickup';
 type PaymentMethod = 'cod' | 'qrph';
 
-interface MockOrderItem {
-  id: number;
-  name: string;
-  spec: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
-
-const mockItems: MockOrderItem[] = [
-  {
-    id: 1,
-    name: 'Classic Cotton Tee',
-    spec: 'Size: M · Color: Ivory',
-    price: 599,
-    quantity: 2,
-    image: '/placeholder-tee.jpg',
-  },
-  {
-    id: 2,
-    name: 'Slim Fit Denim Jeans',
-    spec: 'Size: 32 · Color: Indigo',
-    price: 1899,
-    quantity: 1,
-    image: '/placeholder-jeans.jpg',
-  },
-  {
-    id: 3,
-    name: 'Linen Blend Overshirt',
-    spec: 'Size: L · Color: Sage',
-    price: 1299,
-    quantity: 1,
-    image: '/placeholder-overshirt.jpg',
-  },
-];
-
 export default function CheckoutPage() {
+  const { cart, loading: cartLoading, fetchCart } = useCart();
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('delivery');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [form, setForm] = useState({
     fullName: '',
     phone: '',
@@ -67,13 +38,77 @@ export default function CheckoutPage() {
     zip: '',
   });
 
-  const subtotal = mockItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
+
+  const subtotal = cart.items.reduce(
+    (sum, item) => sum + item.product.base_price * item.quantity,
+    0,
+  );
   const deliveryFee = deliveryMethod === 'delivery' ? 150 : 0;
   const total = subtotal + deliveryFee;
 
   const updateForm = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  const handlePlaceOrder = async () => {
+    setError('');
+    setSubmitting(true);
+    try {
+      await api.post('/api/checkout', {
+        delivery_method: deliveryMethod,
+        payment_method: paymentMethod,
+        shipping_address: {
+          full_name: form.fullName,
+          phone: form.phone,
+          line1: form.address1,
+          line2: form.address2,
+          city: form.city,
+          province: form.province,
+          zip: form.zip,
+        },
+      });
+      window.location.href = '/orders';
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to place order. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (cartLoading) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <Loader2 className="w-8 h-8 text-sari-500 animate-spin" />
+        </div>
+      </>
+    );
+  }
+
+  if (cart.items.length === 0) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+          <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-5">
+            <ShoppingBag className="w-8 h-8 text-gray-300" />
+          </div>
+          <h2 className="font-display text-2xl text-gray-900 mb-2">Your Cart is Empty</h2>
+          <p className="text-gray-500 text-sm mb-6">Add some items to your cart before checking out.</p>
+          <Link
+            href="/products"
+            className="bg-gradient-to-r from-sari-500 to-sari-600 text-white font-medium px-6 py-3 rounded-full"
+          >
+            Browse Products
+          </Link>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -90,7 +125,6 @@ export default function CheckoutPage() {
             }}
           />
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
-            {/* Breadcrumb */}
             <div className="flex items-center gap-1.5 text-sm text-gray-400 mb-4">
               <Link href="/cart" className="hover:text-sari-600 transition-colors">Cart</Link>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -109,6 +143,12 @@ export default function CheckoutPage() {
 
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+          {error && (
+            <div className="mb-6 bg-red-50 text-red-600 text-sm rounded-xl p-4 border border-red-100 animate-fade-in">
+              {error}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10">
             {/* Left Column — Forms */}
             <div className="lg:col-span-2 space-y-6">
@@ -130,7 +170,7 @@ export default function CheckoutPage() {
                       'relative flex flex-col items-center gap-2 p-5 rounded-xl border-2 transition-all duration-200 cursor-pointer',
                       deliveryMethod === 'delivery'
                         ? 'border-sari-500 bg-sari-50/60 shadow-sm shadow-sari-500/10'
-                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50'
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50',
                     )}
                   >
                     {deliveryMethod === 'delivery' && (
@@ -141,7 +181,7 @@ export default function CheckoutPage() {
                         'w-11 h-11 rounded-xl flex items-center justify-center transition-colors duration-200',
                         deliveryMethod === 'delivery'
                           ? 'bg-gradient-to-br from-sari-400 to-sari-600 text-white shadow-sm'
-                          : 'bg-gray-100 text-gray-400'
+                          : 'bg-gray-100 text-gray-400',
                       )}
                     >
                       <Truck className="w-5 h-5" strokeWidth={1.8} />
@@ -149,12 +189,12 @@ export default function CheckoutPage() {
                     <span
                       className={cn(
                         'font-medium text-sm transition-colors',
-                        deliveryMethod === 'delivery' ? 'text-sari-800' : 'text-gray-600'
+                        deliveryMethod === 'delivery' ? 'text-sari-800' : 'text-gray-600',
                       )}
                     >
                       Delivery
                     </span>
-                    <span className="text-xs text-gray-400">2–5 business days</span>
+                    <span className="text-xs text-gray-400">2-5 business days</span>
                   </button>
 
                   <button
@@ -163,7 +203,7 @@ export default function CheckoutPage() {
                       'relative flex flex-col items-center gap-2 p-5 rounded-xl border-2 transition-all duration-200 cursor-pointer',
                       deliveryMethod === 'pickup'
                         ? 'border-sari-500 bg-sari-50/60 shadow-sm shadow-sari-500/10'
-                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50'
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50',
                     )}
                   >
                     {deliveryMethod === 'pickup' && (
@@ -174,7 +214,7 @@ export default function CheckoutPage() {
                         'w-11 h-11 rounded-xl flex items-center justify-center transition-colors duration-200',
                         deliveryMethod === 'pickup'
                           ? 'bg-gradient-to-br from-sari-400 to-sari-600 text-white shadow-sm'
-                          : 'bg-gray-100 text-gray-400'
+                          : 'bg-gray-100 text-gray-400',
                       )}
                     >
                       <Store className="w-5 h-5" strokeWidth={1.8} />
@@ -182,7 +222,7 @@ export default function CheckoutPage() {
                     <span
                       className={cn(
                         'font-medium text-sm transition-colors',
-                        deliveryMethod === 'pickup' ? 'text-sari-800' : 'text-gray-600'
+                        deliveryMethod === 'pickup' ? 'text-sari-800' : 'text-gray-600',
                       )}
                     >
                       Store Pickup
@@ -205,7 +245,6 @@ export default function CheckoutPage() {
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Full Name */}
                   <div className="sm:col-span-1">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Full Name
@@ -219,7 +258,6 @@ export default function CheckoutPage() {
                     />
                   </div>
 
-                  {/* Phone Number */}
                   <div className="sm:col-span-1">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Phone Number
@@ -235,7 +273,6 @@ export default function CheckoutPage() {
 
                   {deliveryMethod === 'delivery' && (
                     <>
-                      {/* Address Line 1 */}
                       <div className="sm:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                           Address Line 1
@@ -252,7 +289,6 @@ export default function CheckoutPage() {
                         </div>
                       </div>
 
-                      {/* Address Line 2 */}
                       <div className="sm:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                           Address Line 2{' '}
@@ -267,7 +303,6 @@ export default function CheckoutPage() {
                         />
                       </div>
 
-                      {/* City */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                           City
@@ -281,7 +316,6 @@ export default function CheckoutPage() {
                         />
                       </div>
 
-                      {/* Province */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                           Province
@@ -295,7 +329,6 @@ export default function CheckoutPage() {
                         />
                       </div>
 
-                      {/* Zip Code */}
                       <div className="sm:col-span-1">
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                           Zip Code
@@ -331,7 +364,7 @@ export default function CheckoutPage() {
                       'flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all duration-200 cursor-pointer',
                       paymentMethod === 'cod'
                         ? 'border-sari-500 bg-sari-50/60 shadow-sm shadow-sari-500/10'
-                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50'
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50',
                     )}
                   >
                     <div
@@ -339,7 +372,7 @@ export default function CheckoutPage() {
                         'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200',
                         paymentMethod === 'cod'
                           ? 'bg-gradient-to-br from-sari-400 to-sari-600 text-white'
-                          : 'bg-gray-100 text-gray-400'
+                          : 'bg-gray-100 text-gray-400',
                       )}
                     >
                       <CreditCard className="w-5 h-5" strokeWidth={1.8} />
@@ -348,7 +381,7 @@ export default function CheckoutPage() {
                       <span
                         className={cn(
                           'font-medium text-sm block transition-colors',
-                          paymentMethod === 'cod' ? 'text-sari-800' : 'text-gray-700'
+                          paymentMethod === 'cod' ? 'text-sari-800' : 'text-gray-700',
                         )}
                       >
                         Cash on Delivery
@@ -363,7 +396,7 @@ export default function CheckoutPage() {
                       'flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all duration-200 cursor-pointer',
                       paymentMethod === 'qrph'
                         ? 'border-sari-500 bg-sari-50/60 shadow-sm shadow-sari-500/10'
-                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50'
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50',
                     )}
                   >
                     <div
@@ -371,7 +404,7 @@ export default function CheckoutPage() {
                         'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200',
                         paymentMethod === 'qrph'
                           ? 'bg-gradient-to-br from-sari-400 to-sari-600 text-white'
-                          : 'bg-gray-100 text-gray-400'
+                          : 'bg-gray-100 text-gray-400',
                       )}
                     >
                       <QrCode className="w-5 h-5" strokeWidth={1.8} />
@@ -380,7 +413,7 @@ export default function CheckoutPage() {
                       <span
                         className={cn(
                           'font-medium text-sm block transition-colors',
-                          paymentMethod === 'qrph' ? 'text-sari-800' : 'text-gray-700'
+                          paymentMethod === 'qrph' ? 'text-sari-800' : 'text-gray-700',
                         )}
                       >
                         QR PH
@@ -405,21 +438,29 @@ export default function CheckoutPage() {
 
                 {/* Item List */}
                 <div className="space-y-4 mb-6">
-                  {mockItems.map((item) => (
-                    <div key={item.id} className="flex gap-3">
-                      {/* Thumbnail placeholder */}
-                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 border border-gray-200/60 flex items-center justify-center shrink-0">
-                        <Package className="w-6 h-6 text-gray-300" strokeWidth={1.5} />
+                  {cart.items.map((item) => (
+                    <div key={item.product_id} className="flex gap-3">
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 border border-gray-200/60 flex items-center justify-center shrink-0 overflow-hidden">
+                        {item.product.image_url ? (
+                          <img
+                            src={item.product.image_url}
+                            alt={item.product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Package className="w-6 h-6 text-gray-300" strokeWidth={1.5} />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">
-                          {item.name}
+                          {item.product.name}
                         </p>
-                        <p className="text-xs text-gray-400 mt-0.5">{item.spec}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Qty: {item.quantity}
+                        </p>
                         <div className="flex items-center justify-between mt-1.5">
-                          <span className="text-xs text-gray-400">Qty: {item.quantity}</span>
                           <span className="text-sm font-semibold text-gray-800">
-                            {formatPrice(item.price * item.quantity)}
+                            {formatPrice(item.product.base_price * item.quantity)}
                           </span>
                         </div>
                       </div>
@@ -427,7 +468,6 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
-                {/* Divider */}
                 <div className="border-t border-dashed border-gray-200 my-4" />
 
                 {/* Totals */}
@@ -454,11 +494,24 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Place Order Button */}
-                <button className="group w-full mt-6 bg-gradient-to-r from-sari-500 to-sari-600 hover:from-sari-600 hover:to-sari-700 text-white font-medium py-3.5 rounded-xl shadow-md shadow-sari-500/20 hover:shadow-lg hover:shadow-sari-500/30 transition-all duration-200 flex items-center justify-center gap-2">
-                  Place Order
-                  <span className="inline-block transition-transform duration-200 group-hover:translate-x-0.5">
-                    &rarr;
-                  </span>
+                <button
+                  onClick={handlePlaceOrder}
+                  disabled={submitting}
+                  className="group w-full mt-6 bg-gradient-to-r from-sari-500 to-sari-600 hover:from-sari-600 hover:to-sari-700 text-white font-medium py-3.5 rounded-xl shadow-md shadow-sari-500/20 hover:shadow-lg hover:shadow-sari-500/30 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Placing Order...
+                    </span>
+                  ) : (
+                    <>
+                      Place Order
+                      <span className="inline-block transition-transform duration-200 group-hover:translate-x-0.5">
+                        &rarr;
+                      </span>
+                    </>
+                  )}
                 </button>
 
                 {/* Trust Badge */}
