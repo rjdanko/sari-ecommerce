@@ -42,7 +42,7 @@ class ProductController extends Controller
         };
 
         $perPage = min((int) $request->input('per_page', 20), 100);
-        return response()->json($query->paginate($perPage));
+        return ProductResource::collection($query->paginate($perPage))->response();
     }
 
     /**
@@ -165,6 +165,6 @@ class ProductController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        return response()->json($products);
+        return ProductResource::collection($products)->response();
     }
 }

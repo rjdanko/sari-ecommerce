@@ -33,6 +33,7 @@ Route::middleware('throttle:auth')->group(function () {
     Route::post('/login', LoginController::class);
     Route::get('/auth/google/redirect', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirect']);
     Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback']);
+    Route::post('/auth/google/exchange', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'exchangeToken']);
 });
 
 // SEARCH — Separate rate limit (30/min per IP)
@@ -66,6 +67,7 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
     Route::post('/checkout', [CheckoutController::class, 'createSession']);
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancelOrder']);
 
     // Personalized recommendations
     Route::get('/recommendations/for-you', [RecommendationController::class, 'forUser']);
@@ -84,6 +86,7 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
         Route::put('/products/{product}', [ProductController::class, 'update']);
         Route::delete('/products/{product}', [ProductController::class, 'destroy']);
         Route::get('/orders', [OrderController::class, 'businessOrders']);
+        Route::post('/orders/{order}/confirm', [OrderController::class, 'confirmOrder']);
         Route::put('/orders/{order}/status', [OrderController::class, 'updateStatus']);
     });
 

@@ -1,17 +1,53 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
+import api, { getCsrfCookie } from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
   const { login } = useAuth();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Handle Google OAuth token exchange
+  useEffect(() => {
+    const googleToken = searchParams.get('google_token');
+    const googleError = searchParams.get('error');
+
+    if (googleError === 'google_auth_failed') {
+      setError('Google login failed. Please try again.');
+      return;
+    }
+
+    if (googleToken) {
+      setLoading(true);
+      (async () => {
+        try {
+          await getCsrfCookie();
+          await api.post('/api/auth/google/exchange', { token: googleToken });
+          window.location.href = '/';
+        } catch {
+          setError('Google login failed. Please try again.');
+          setLoading(false);
+        }
+      })();
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

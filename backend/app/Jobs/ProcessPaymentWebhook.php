@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\CartService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -59,6 +60,9 @@ class ProcessPaymentWebhook implements ShouldQueue
                     ->decrement('stock_quantity', $item->quantity);
             }
         });
+
+        // Clear the user's cart after successful payment
+        app(CartService::class)->clearCart($order->user_id);
 
         Log::info("PayMongo webhook: order {$orderId} marked as paid");
     }

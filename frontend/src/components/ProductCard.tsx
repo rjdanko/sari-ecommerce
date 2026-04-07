@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, ShoppingCart, Star } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { formatPrice } from '@/lib/utils';
+import { Heart, ShoppingCart, Star, Loader2 } from 'lucide-react';
+import { cn, formatPrice } from '@/lib/utils';
+import { useCartContext } from '@/contexts/CartContext';
+import { useToast } from '@/contexts/ToastContext';
 import type { Product } from '@/types/product';
 
 interface ProductCardProps {
@@ -18,7 +19,10 @@ export default function ProductCard({
   onCompareToggle,
   isComparing = false,
 }: ProductCardProps) {
+  const { addItem } = useCartContext();
+  const { addToast } = useToast();
   const [wishlisted, setWishlisted] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
 
   const hasRealImage = !!product.primary_image?.url;
   const imageUrl = product.primary_image?.url ?? '/placeholder-product.png';
@@ -166,10 +170,37 @@ export default function ProductCard({
               )}
           </div>
           <button
-            className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-sari-400 to-sari-600 text-white shadow-sm hover:shadow-md hover:shadow-sari-400/30 hover:from-sari-500 hover:to-sari-700 active:scale-95 transition-all duration-200"
+            onClick={async (e) => {
+              e.preventDefault();
+              if (addingToCart) return;
+              setAddingToCart(true);
+              try {
+                await addItem(product.id);
+                addToast({
+                  type: 'success',
+                  title: 'Added to cart',
+                  message: product.name,
+                  action: { label: 'View Cart', href: '/cart' },
+                });
+              } catch {
+                addToast({
+                  type: 'error',
+                  title: 'Could not add to cart',
+                  message: 'Please log in or try again.',
+                });
+              } finally {
+                setAddingToCart(false);
+              }
+            }}
+            disabled={addingToCart}
+            className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-sari-400 to-sari-600 text-white shadow-sm hover:shadow-md hover:shadow-sari-400/30 hover:from-sari-500 hover:to-sari-700 active:scale-95 transition-all duration-200 disabled:opacity-60"
             aria-label="Add to cart"
           >
-            <ShoppingCart className="w-4 h-4" />
+            {addingToCart ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ShoppingCart className="w-4 h-4" />
+            )}
           </button>
         </div>
       </div>

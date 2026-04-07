@@ -68,19 +68,22 @@ return [
     */
 
     'typesense' => [
-        'api_key' => env('TYPESENSE_API_KEY', ''),
-        'nodes' => [
-            [
-                'host' => env('TYPESENSE_HOST', 'localhost'),
-                'port' => env('TYPESENSE_PORT', '8108'),
-                'protocol' => env('TYPESENSE_PROTOCOL', 'http'),
+        'client-settings' => [
+            'api_key' => env('TYPESENSE_API_KEY', ''),
+            'nodes' => [
+                [
+                    'host' => env('TYPESENSE_HOST', 'localhost'),
+                    'port' => env('TYPESENSE_PORT', '8108'),
+                    'protocol' => env('TYPESENSE_PROTOCOL', 'http'),
+                ],
             ],
+            'nearest_node' => null,
+            'connection_timeout_seconds' => 2,
+            'healthcheck_interval_seconds' => 30,
+            'num_retries' => 3,
+            'retry_interval_seconds' => 1,
         ],
-        'nearest_node' => null,
-        'connection_timeout_seconds' => 2,
-        'healthcheck_interval_seconds' => 30,
-        'num_retries' => 3,
-        'retry_interval_seconds' => 1,
+        'max_total_results' => 1000,
     ],
 
 ];

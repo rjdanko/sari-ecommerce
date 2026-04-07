@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
-import { useCart } from '@/hooks/useCart';
+import { useCartContext } from '@/contexts/CartContext';
+import { useToast } from '@/contexts/ToastContext';
 import { cn, formatPrice } from '@/lib/utils';
 import api from '@/lib/api';
 import {
-  Truck,
-  Store,
   MapPin,
   CreditCard,
   QrCode,
@@ -17,17 +17,41 @@ import {
   Package,
   Loader2,
   ShoppingBag,
+  Minus,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 
-type DeliveryMethod = 'delivery' | 'pickup';
 type PaymentMethod = 'cod' | 'qrph';
 
 export default function CheckoutPage() {
-  const { cart, loading: cartLoading, fetchCart } = useCart();
-  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('delivery');
+  return (
+    <Suspense fallback={
+      <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <Loader2 className="w-8 h-8 text-sari-500 animate-spin" />
+        </div>
+      </>
+    }>
+      <CheckoutContent />
+    </Suspense>
+  );
+}
+
+function CheckoutContent() {
+  const searchParams = useSearchParams();
+  const isDirect = searchParams.get('direct') === '1';
+  const directProductId = searchParams.get('product_id');
+  const directQuantity = parseInt(searchParams.get('quantity') || '1', 10);
+
+  const { cart, loading: cartLoading, fetchCart, updateQuantity, removeItem } = useCartContext();
+  const { addToast } = useToast();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [directProduct, setDirectProduct] = useState<any>(null);
+  const [directLoading, setDirectLoading] = useState(false);
   const [form, setForm] = useState({
     fullName: '',
     phone: '',
@@ -39,26 +63,70 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    fetchCart();
-  }, [fetchCart]);
+    if (isDirect && directProductId) {
+      setDirectLoading(true);
+      api.get(`/api/products/${directProductId}`).then(({ data }) => {
+        setDirectProduct(data.data ?? data);
+      }).catch(() => {
+        // product fetch failed
+      }).finally(() => {
+        setDirectLoading(false);
+      });
+    } else {
+      fetchCart();
+    }
+  }, [isDirect, directProductId, fetchCart]);
 
-  const subtotal = cart.items.reduce(
+  // Build display items — either direct product or cart items
+  const displayItems = isDirect && directProduct
+    ? [{
+        product_id: directProduct.id,
+        quantity: directQuantity,
+        variant_id: null,
+        product: {
+          id: directProduct.id,
+          name: directProduct.name,
+          slug: directProduct.slug,
+          base_price: directProduct.base_price,
+          image_url: directProduct.primary_image?.url ?? null,
+          stock_quantity: directProduct.stock_quantity,
+        },
+      }]
+    : cart.items;
+
+  const subtotal = displayItems.reduce(
     (sum, item) => sum + item.product.base_price * item.quantity,
     0,
   );
-  const deliveryFee = deliveryMethod === 'delivery' ? 150 : 0;
-  const total = subtotal + deliveryFee;
+  const total = subtotal;
 
   const updateForm = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleQuantityChange = async (productId: number, newQty: number) => {
+    if (newQty < 1) return;
+    try {
+      await updateQuantity(productId, newQty);
+    } catch {
+      addToast({ type: 'error', title: 'Failed to update quantity' });
+    }
+  };
+
+  const handleRemoveItem = async (productId: number, productName: string) => {
+    try {
+      await removeItem(productId);
+      addToast({ type: 'info', title: 'Removed from cart', message: productName });
+    } catch {
+      addToast({ type: 'error', title: 'Failed to remove item' });
+    }
   };
 
   const handlePlaceOrder = async () => {
     setError('');
     setSubmitting(true);
     try {
-      await api.post('/api/checkout', {
-        delivery_method: deliveryMethod,
+      const payload: any = {
         payment_method: paymentMethod,
         shipping_address: {
           full_name: form.fullName,
@@ -66,19 +134,37 @@ export default function CheckoutPage() {
           line1: form.address1,
           line2: form.address2,
           city: form.city,
-          province: form.province,
-          zip: form.zip,
+          state: form.province,
+          postal_code: form.zip,
+          country: 'PH',
         },
-      });
-      window.location.href = '/orders';
+      };
+
+      if (isDirect && directProductId) {
+        payload.direct_buy = {
+          product_id: parseInt(directProductId),
+          quantity: directQuantity,
+        };
+      }
+
+      const { data } = await api.post('/api/checkout', payload);
+
+      if (data.checkout_url) {
+        // Online payment — open PayMongo gateway in new tab
+        window.open(data.checkout_url, '_blank');
+        window.location.href = '/checkout/success';
+      } else {
+        // COD — redirect directly to success
+        window.location.href = data.redirect_url || '/checkout/success';
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to place order. Please try again.');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to place order. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (cartLoading) {
+  if (cartLoading || directLoading) {
     return (
       <>
         <Navbar />
@@ -89,7 +175,7 @@ export default function CheckoutPage() {
     );
   }
 
-  if (cart.items.length === 0) {
+  if (displayItems.length === 0) {
     return (
       <>
         <Navbar />
@@ -152,7 +238,7 @@ export default function CheckoutPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10">
             {/* Left Column — Forms */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Delivery Method */}
+              {/* Shipping Information */}
               <section
                 className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-slide-up"
                 style={{ animationDelay: '0.05s' }}
@@ -161,87 +247,7 @@ export default function CheckoutPage() {
                   <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-sari-100 text-sari-700 text-xs font-bold">
                     1
                   </span>
-                  Delivery Method
-                </h2>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setDeliveryMethod('delivery')}
-                    className={cn(
-                      'relative flex flex-col items-center gap-2 p-5 rounded-xl border-2 transition-all duration-200 cursor-pointer',
-                      deliveryMethod === 'delivery'
-                        ? 'border-sari-500 bg-sari-50/60 shadow-sm shadow-sari-500/10'
-                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50',
-                    )}
-                  >
-                    {deliveryMethod === 'delivery' && (
-                      <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-sari-500" />
-                    )}
-                    <div
-                      className={cn(
-                        'w-11 h-11 rounded-xl flex items-center justify-center transition-colors duration-200',
-                        deliveryMethod === 'delivery'
-                          ? 'bg-gradient-to-br from-sari-400 to-sari-600 text-white shadow-sm'
-                          : 'bg-gray-100 text-gray-400',
-                      )}
-                    >
-                      <Truck className="w-5 h-5" strokeWidth={1.8} />
-                    </div>
-                    <span
-                      className={cn(
-                        'font-medium text-sm transition-colors',
-                        deliveryMethod === 'delivery' ? 'text-sari-800' : 'text-gray-600',
-                      )}
-                    >
-                      Delivery
-                    </span>
-                    <span className="text-xs text-gray-400">2-5 business days</span>
-                  </button>
-
-                  <button
-                    onClick={() => setDeliveryMethod('pickup')}
-                    className={cn(
-                      'relative flex flex-col items-center gap-2 p-5 rounded-xl border-2 transition-all duration-200 cursor-pointer',
-                      deliveryMethod === 'pickup'
-                        ? 'border-sari-500 bg-sari-50/60 shadow-sm shadow-sari-500/10'
-                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50',
-                    )}
-                  >
-                    {deliveryMethod === 'pickup' && (
-                      <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-sari-500" />
-                    )}
-                    <div
-                      className={cn(
-                        'w-11 h-11 rounded-xl flex items-center justify-center transition-colors duration-200',
-                        deliveryMethod === 'pickup'
-                          ? 'bg-gradient-to-br from-sari-400 to-sari-600 text-white shadow-sm'
-                          : 'bg-gray-100 text-gray-400',
-                      )}
-                    >
-                      <Store className="w-5 h-5" strokeWidth={1.8} />
-                    </div>
-                    <span
-                      className={cn(
-                        'font-medium text-sm transition-colors',
-                        deliveryMethod === 'pickup' ? 'text-sari-800' : 'text-gray-600',
-                      )}
-                    >
-                      Store Pickup
-                    </span>
-                    <span className="text-xs text-gray-400">Ready in 24 hours</span>
-                  </button>
-                </div>
-              </section>
-
-              {/* Shipping Information */}
-              <section
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-slide-up"
-                style={{ animationDelay: '0.1s' }}
-              >
-                <h2 className="font-display text-lg text-gray-900 mb-4 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-sari-100 text-sari-700 text-xs font-bold">
-                    2
-                  </span>
-                  {deliveryMethod === 'delivery' ? 'Shipping Information' : 'Pickup Contact'}
+                  Shipping Information
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -271,89 +277,85 @@ export default function CheckoutPage() {
                     />
                   </div>
 
-                  {deliveryMethod === 'delivery' && (
-                    <>
-                      <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                          Address Line 1
-                        </label>
-                        <div className="relative">
-                          <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                          <input
-                            type="text"
-                            value={form.address1}
-                            onChange={(e) => updateForm('address1', e.target.value)}
-                            placeholder="House/Unit No., Street, Barangay"
-                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
-                          />
-                        </div>
-                      </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Address Line 1
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                      <input
+                        type="text"
+                        value={form.address1}
+                        onChange={(e) => updateForm('address1', e.target.value)}
+                        placeholder="House/Unit No., Street, Barangay"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                      />
+                    </div>
+                  </div>
 
-                      <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                          Address Line 2{' '}
-                          <span className="text-gray-300 font-normal">(Optional)</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={form.address2}
-                          onChange={(e) => updateForm('address2', e.target.value)}
-                          placeholder="Building, Floor, Landmark"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
-                        />
-                      </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Address Line 2{' '}
+                      <span className="text-gray-300 font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.address2}
+                      onChange={(e) => updateForm('address2', e.target.value)}
+                      placeholder="Building, Floor, Landmark"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                    />
+                  </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                          City
-                        </label>
-                        <input
-                          type="text"
-                          value={form.city}
-                          onChange={(e) => updateForm('city', e.target.value)}
-                          placeholder="Quezon City"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
-                        />
-                      </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      value={form.city}
+                      onChange={(e) => updateForm('city', e.target.value)}
+                      placeholder="Quezon City"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                    />
+                  </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                          Province
-                        </label>
-                        <input
-                          type="text"
-                          value={form.province}
-                          onChange={(e) => updateForm('province', e.target.value)}
-                          placeholder="Metro Manila"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
-                        />
-                      </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Province
+                    </label>
+                    <input
+                      type="text"
+                      value={form.province}
+                      onChange={(e) => updateForm('province', e.target.value)}
+                      placeholder="Metro Manila"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                    />
+                  </div>
 
-                      <div className="sm:col-span-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                          Zip Code
-                        </label>
-                        <input
-                          type="text"
-                          value={form.zip}
-                          onChange={(e) => updateForm('zip', e.target.value)}
-                          placeholder="1100"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
-                        />
-                      </div>
-                    </>
-                  )}
+                  <div className="sm:col-span-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Zip Code
+                    </label>
+                    <input
+                      type="text"
+                      value={form.zip}
+                      onChange={(e) => updateForm('zip', e.target.value)}
+                      placeholder="1100"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                    />
+                  </div>
                 </div>
               </section>
 
               {/* Payment Method */}
               <section
                 className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-slide-up"
-                style={{ animationDelay: '0.15s' }}
+                style={{ animationDelay: '0.1s' }}
               >
                 <h2 className="font-display text-lg text-gray-900 mb-4 flex items-center gap-2">
                   <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-sari-100 text-sari-700 text-xs font-bold">
-                    3
+                    2
                   </span>
                   Payment Method
                 </h2>
@@ -429,7 +431,7 @@ export default function CheckoutPage() {
             <div className="lg:col-span-1">
               <div
                 className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 lg:sticky lg:top-24 animate-slide-up"
-                style={{ animationDelay: '0.2s' }}
+                style={{ animationDelay: '0.15s' }}
               >
                 <h2 className="font-display text-lg text-gray-900 mb-5 flex items-center gap-2">
                   <Package className="w-5 h-5 text-sari-500" strokeWidth={1.8} />
@@ -438,7 +440,7 @@ export default function CheckoutPage() {
 
                 {/* Item List */}
                 <div className="space-y-4 mb-6">
-                  {cart.items.map((item) => (
+                  {displayItems.map((item) => (
                     <div key={item.product_id} className="flex gap-3">
                       <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 border border-gray-200/60 flex items-center justify-center shrink-0 overflow-hidden">
                         {item.product.image_url ? (
@@ -455,10 +457,42 @@ export default function CheckoutPage() {
                         <p className="text-sm font-medium text-gray-900 truncate">
                           {item.product.name}
                         </p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          Qty: {item.quantity}
-                        </p>
-                        <div className="flex items-center justify-between mt-1.5">
+                        {/* Quantity controls */}
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          {!isDirect && (
+                            <>
+                              <button
+                                onClick={() => handleQuantityChange(item.product_id, item.quantity - 1)}
+                                disabled={item.quantity <= 1}
+                                className="w-6 h-6 flex items-center justify-center rounded-md border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                            </>
+                          )}
+                          <span className="w-7 text-center text-xs font-semibold text-gray-700">
+                            {isDirect ? `Qty: ${item.quantity}` : item.quantity}
+                          </span>
+                          {!isDirect && (
+                            <>
+                              <button
+                                onClick={() => handleQuantityChange(item.product_id, item.quantity + 1)}
+                                disabled={item.quantity >= item.product.stock_quantity}
+                                className="w-6 h-6 flex items-center justify-center rounded-md border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => handleRemoveItem(item.product_id, item.product.name)}
+                                className="ml-auto w-6 h-6 flex items-center justify-center rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                aria-label="Remove item"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
                           <span className="text-sm font-semibold text-gray-800">
                             {formatPrice(item.product.base_price * item.quantity)}
                           </span>
@@ -475,12 +509,6 @@ export default function CheckoutPage() {
                   <div className="flex justify-between text-gray-500">
                     <span>Subtotal</span>
                     <span className="font-medium text-gray-700">{formatPrice(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-500">
-                    <span>Delivery Fee</span>
-                    <span className="font-medium text-gray-700">
-                      {deliveryFee === 0 ? 'Free' : formatPrice(deliveryFee)}
-                    </span>
                   </div>
                 </div>
 

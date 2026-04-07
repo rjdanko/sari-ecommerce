@@ -30,6 +30,8 @@ interface Order {
 }
 
 const statusStyles: Record<string, string> = {
+  pending_confirmation: 'bg-amber-50 text-amber-700',
+  confirmed: 'bg-blue-50 text-blue-700',
   pending: 'bg-gray-100 text-gray-700',
   processing: 'bg-blue-50 text-blue-700',
   paid: 'bg-emerald-50 text-emerald-700',
@@ -38,7 +40,12 @@ const statusStyles: Record<string, string> = {
   cancelled: 'bg-red-50 text-red-700',
 };
 
-const statusOptions = ['all', 'pending', 'processing', 'paid', 'shipped', 'delivered', 'cancelled'];
+const statusLabels: Record<string, string> = {
+  pending_confirmation: 'Pending Confirmation',
+  confirmed: 'Confirmed',
+};
+
+const statusOptions = ['all', 'pending_confirmation', 'confirmed', 'processing', 'paid', 'shipped', 'delivered', 'cancelled'];
 
 function SkeletonRow() {
   return (
@@ -49,6 +56,7 @@ function SkeletonRow() {
       <td className="px-5 py-4"><div className="h-4 w-10 rounded bg-gray-200" /></td>
       <td className="px-5 py-4"><div className="h-4 w-20 rounded bg-gray-200" /></td>
       <td className="px-5 py-4"><div className="h-5 w-16 rounded-full bg-gray-200" /></td>
+      <td className="px-5 py-4"><div className="h-5 w-16 rounded bg-gray-200" /></td>
     </tr>
   );
 }
@@ -85,6 +93,15 @@ export default function BusinessOrdersPage() {
     debounceRef.current = setTimeout(() => {
       fetchOrders(value, statusFilter);
     }, 300);
+  };
+
+  const handleConfirmOrder = async (orderId: number) => {
+    try {
+      await api.post(`/api/business/orders/${orderId}/confirm`);
+      fetchOrders(search, statusFilter);
+    } catch {
+      // error handled silently
+    }
   };
 
   const handleStatusChange = (status: string) => {
@@ -127,7 +144,7 @@ export default function BusinessOrdersPage() {
         >
           {statusOptions.map((s) => (
             <option key={s} value={s}>
-              {s === 'all' ? 'All Statuses' : s.charAt(0).toUpperCase() + s.slice(1)}
+              {s === 'all' ? 'All Statuses' : (statusLabels[s] || s.charAt(0).toUpperCase() + s.slice(1))}
             </option>
           ))}
         </select>
@@ -145,6 +162,7 @@ export default function BusinessOrdersPage() {
                 <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Items</th>
                 <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Total</th>
                 <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -167,12 +185,22 @@ export default function BusinessOrdersPage() {
                     <td className="px-5 py-4">
                       <span
                         className={cn(
-                          'inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize',
+                          'inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
                           statusStyles[order.status] || 'bg-gray-100 text-gray-700'
                         )}
                       >
-                        {order.status}
+                        {statusLabels[order.status] || (order.status.charAt(0).toUpperCase() + order.status.slice(1))}
                       </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      {order.status === 'pending_confirmation' && (
+                        <button
+                          onClick={() => handleConfirmOrder(order.id)}
+                          className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors"
+                        >
+                          Confirm
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -42,6 +42,23 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Interactive cursor for clickable elements */
+button:not(:disabled),
+[role="button"]:not(:disabled),
+a,
+select,
+label[for],
+input[type="checkbox"],
+input[type="radio"],
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"]:disabled {
+  cursor: not-allowed;
+}
+
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }

@@ -3,20 +3,34 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Package, ChevronDown, ChevronUp, ShoppingBag } from 'lucide-react';
+import { Package, ChevronDown, ChevronUp, ShoppingBag, XCircle } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import api from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice, cn } from '@/lib/utils';
+import { useToast } from '@/contexts/ToastContext';
 import { Order } from '@/types/order';
 
 const statusStyles: Record<string, string> = {
+  pending_confirmation: 'bg-amber-50 text-amber-700',
+  confirmed: 'bg-blue-50 text-blue-700',
   pending: 'bg-gray-100 text-gray-700',
   processing: 'bg-blue-50 text-blue-700',
   paid: 'bg-emerald-50 text-emerald-700',
   shipped: 'bg-sari-50 text-sari-700',
   delivered: 'bg-green-50 text-green-700',
   cancelled: 'bg-red-50 text-red-700',
+};
+
+const statusLabels: Record<string, string> = {
+  pending_confirmation: 'Pending Store Confirmation',
+  confirmed: 'Confirmed',
+  pending: 'Pending',
+  processing: 'Processing',
+  paid: 'Paid',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
 };
 
 function formatDate(date: string): string {
@@ -47,6 +61,7 @@ function OrderSkeleton() {
 export default function OrdersPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { addToast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -76,6 +91,21 @@ export default function OrdersPage() {
 
   const toggleExpand = (id: number) => {
     setExpandedId((prev) => (prev === id ? null : id));
+  };
+
+  const handleCancelOrder = async (orderId: number) => {
+    try {
+      await api.post(`/api/orders/${orderId}/cancel`);
+      const { data } = await api.get('/api/orders');
+      setOrders(data.data ?? []);
+      addToast({ type: 'info', title: 'Order cancelled' });
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        title: 'Could not cancel order',
+        message: err.response?.data?.error,
+      });
+    }
   };
 
   const isLoading = authLoading || loading;
@@ -176,11 +206,11 @@ export default function OrdersPage() {
                       <div className="flex items-center gap-3 shrink-0">
                         <span
                           className={cn(
-                            'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize',
+                            'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
                             statusStyles[order.status] ?? 'bg-gray-100 text-gray-700'
                           )}
                         >
-                          {order.status}
+                          {statusLabels[order.status] ?? order.status}
                         </span>
                         <span className="text-sm font-semibold text-gray-900">
                           {formatPrice(order.total)}
@@ -240,6 +270,19 @@ export default function OrdersPage() {
                             Total: {formatPrice(order.total)}
                           </p>
                         </div>
+
+                        {/* Cancel button — only for pending_confirmation orders */}
+                        {order.status === 'pending_confirmation' && (
+                          <div className="mt-4 pt-3 border-t border-gray-200">
+                            <button
+                              onClick={() => handleCancelOrder(order.id)}
+                              className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 font-medium transition-colors"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              Cancel Order
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

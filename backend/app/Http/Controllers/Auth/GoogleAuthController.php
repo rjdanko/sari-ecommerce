@@ -5,8 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\Enums\RoleEnum;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -39,12 +43,45 @@ class GoogleAuthController extends Controller
                 $user->assignRole(RoleEnum::USER->value);
             }
 
-            Auth::login($user);
-            request()->session()->regenerate();
+            // Generate a one-time token and store in cache (expires in 60 seconds)
+            $token = Str::random(64);
+            Cache::put('google_auth_token:' . $token, $user->id, 60);
 
-            return redirect()->to($frontendUrl);
+            return redirect()->to($frontendUrl . '/login?google_token=' . $token);
         } catch (\Exception $e) {
             return redirect()->to($frontendUrl . '/login?error=google_auth_failed');
         }
+    }
+
+    /**
+     * Exchange a one-time Google auth token for a session cookie.
+     */
+    public function exchangeToken(Request $request): JsonResponse
+    {
+        $token = $request->input('token');
+
+        if (! $token) {
+            return response()->json(['message' => 'Token is required.'], 422);
+        }
+
+        $userId = Cache::pull('google_auth_token:' . $token);
+
+        if (! $userId) {
+            return response()->json(['message' => 'Invalid or expired token.'], 401);
+        }
+
+        $user = User::find($userId);
+
+        if (! $user) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return response()->json([
+            'message' => 'Login successful.',
+            'user' => $user->load('roles'),
+        ]);
     }
 }

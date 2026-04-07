@@ -25,8 +25,34 @@ class ProductResource extends JsonResource
             'is_featured' => $this->is_featured,
             'view_count' => $this->view_count,
             'category' => $this->whenLoaded('category'),
-            'images' => $this->whenLoaded('images'),
-            'primary_image' => $this->whenLoaded('primaryImage'),
+            'images' => $this->whenLoaded('images', function () {
+                return $this->images->map(function ($image) {
+                    $url = $image->url;
+                    if ($url && !str_starts_with($url, 'http')) {
+                        $url = asset('storage/' . $url);
+                    }
+                    return [
+                        'id' => $image->id,
+                        'url' => $url,
+                        'alt_text' => $image->alt_text,
+                        'is_primary' => $image->is_primary,
+                        'sort_order' => $image->sort_order,
+                    ];
+                });
+            }),
+            'primary_image' => $this->whenLoaded('primaryImage', function () {
+                $image = $this->primaryImage;
+                if (!$image) return null;
+                $url = $image->url;
+                if ($url && !str_starts_with($url, 'http')) {
+                    $url = asset('storage/' . $url);
+                }
+                return [
+                    'id' => $image->id,
+                    'url' => $url,
+                    'alt_text' => $image->alt_text,
+                ];
+            }),
             'variants' => $this->whenLoaded('variants'),
             'business' => $this->whenLoaded('business', fn () => [
                 'id' => $this->business->id,

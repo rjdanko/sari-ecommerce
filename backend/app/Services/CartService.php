@@ -36,7 +36,11 @@ class CartService
                         'name' => $product->name,
                         'slug' => $product->slug,
                         'base_price' => $product->base_price,
-                        'image_url' => $product->primaryImage?->url,
+                        'image_url' => $product->primaryImage?->url
+                            ? (str_starts_with($product->primaryImage->url, 'http')
+                                ? $product->primaryImage->url
+                                : asset('storage/' . $product->primaryImage->url))
+                            : null,
                         'stock_quantity' => $product->stock_quantity,
                     ],
                 ];

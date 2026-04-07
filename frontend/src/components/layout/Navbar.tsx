@@ -4,10 +4,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useCartContext } from '@/contexts/CartContext';
 import { Heart, ShoppingCart, Search, Menu, X } from 'lucide-react';
 
 export default function Navbar() {
   const { user, loading, logout, hasRole } = useAuth();
+  const { cart } = useCartContext();
+  const itemCount = cart.item_count || cart.items.length;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -80,6 +83,11 @@ export default function Navbar() {
                   className="p-2 text-gray-500 hover:text-sari-600 hover:bg-sari-50 rounded-full transition-all duration-200 relative"
                 >
                   <ShoppingCart className="w-5 h-5" />
+                  {itemCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-sari-500 rounded-full shadow-sm shadow-sari-500/30 animate-fade-in">
+                      {itemCount > 99 ? '99+' : itemCount}
+                    </span>
+                  )}
                 </Link>
               </>
             )}

@@ -8,6 +8,8 @@ import ProductCard from '@/components/ProductCard';
 import { cn, formatPrice } from '@/lib/utils';
 import api from '@/lib/api';
 import type { Product } from '@/types/product';
+import { useCartContext } from '@/contexts/CartContext';
+import { useToast } from '@/contexts/ToastContext';
 import {
   ChevronRight,
   Star,
@@ -49,6 +51,8 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [wishlisted, setWishlisted] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
+  const { addItem } = useCartContext();
+  const { addToast } = useToast();
   const [addingToCart, setAddingToCart] = useState(false);
 
   const fetchProduct = useCallback(async () => {
@@ -95,21 +99,32 @@ export default function ProductDetailPage() {
     if (!product) return;
     setAddingToCart(true);
     try {
-      await api.post('/api/cart', {
-        product_id: product.id,
-        quantity,
-        variant_id: null,
+      await addItem(product.id, quantity);
+      addToast({
+        type: 'success',
+        title: 'Added to cart',
+        message: `${product.name} (x${quantity})`,
+        action: { label: 'View Cart', href: '/cart' },
       });
     } catch {
-      // not logged in
+      addToast({
+        type: 'error',
+        title: 'Could not add to cart',
+        message: 'Please log in or try again.',
+      });
     } finally {
       setAddingToCart(false);
     }
   };
 
-  const handleBuyNow = async () => {
-    await handleAddToCart();
-    window.location.href = '/checkout';
+  const handleBuyNow = () => {
+    if (!product) return;
+    const params = new URLSearchParams({
+      direct: '1',
+      product_id: product.id.toString(),
+      quantity: quantity.toString(),
+    });
+    window.location.href = `/checkout?${params.toString()}`;
   };
 
   const toggleWishlist = async () => {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ProductResource;
 use App\Models\Store;
 use App\Services\ImageService;
 use Illuminate\Http\JsonResponse;
@@ -63,7 +64,7 @@ class StoreController extends Controller
 
         return response()->json([
             'store' => $store,
-            'products' => $products,
+            'products' => ProductResource::collection($products)->response()->getData(true),
         ]);
     }
 

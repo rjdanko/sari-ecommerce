@@ -23,14 +23,14 @@ class PaymentService
      * Line items are built from server-side cart data (Redis),
      * NOT from user-submitted prices. This prevents price manipulation.
      */
-    public function createCheckoutSession(array $lineItems, array $metadata = []): array
+    public function createCheckoutSession(array $lineItems, array $metadata = [], array $paymentMethods = ['card', 'gcash']): array
     {
         $response = Http::withBasicAuth($this->secretKey, '')
             ->post("{$this->baseUrl}/checkout_sessions", [
                 'data' => [
                     'attributes' => [
                         'line_items' => $lineItems,
-                        'payment_method_types' => ['card', 'gcash'],
+                        'payment_method_types' => $paymentMethods,
                         'send_email_receipt' => true,
                         'show_description' => true,
                         'show_line_items' => true,

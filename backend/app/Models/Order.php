@@ -15,7 +15,7 @@ class Order extends Model
         'tax', 'total', 'payment_method', 'payment_status',
         'paymongo_checkout_id', 'paymongo_payment_id',
         'shipping_address', 'billing_address', 'notes',
-        'paid_at', 'shipped_at', 'delivered_at',
+        'paid_at', 'confirmed_at', 'cancelled_at', 'shipped_at', 'delivered_at',
     ];
 
     protected function casts(): array
@@ -24,6 +24,8 @@ class Order extends Model
             'shipping_address' => 'array',
             'billing_address' => 'array',
             'paid_at' => 'datetime',
+            'confirmed_at' => 'datetime',
+            'cancelled_at' => 'datetime',
             'shipped_at' => 'datetime',
             'delivered_at' => 'datetime',
         ];

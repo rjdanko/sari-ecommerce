@@ -15,7 +15,11 @@ export default function WishlistPage() {
   const fetchWishlist = useCallback(async () => {
     try {
       const { data } = await api.get('/api/wishlist');
-      setItems(data.data ?? data);
+      const raw = data.data ?? data;
+      // API returns Wishlist models with nested product — extract the products
+      setItems(
+        (Array.isArray(raw) ? raw : []).map((item: any) => item.product ?? item).filter(Boolean)
+      );
     } catch {
       // not logged in or empty
     } finally {

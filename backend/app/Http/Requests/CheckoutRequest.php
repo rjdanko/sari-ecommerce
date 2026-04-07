@@ -15,6 +15,8 @@ class CheckoutRequest extends FormRequest
     {
         return [
             'shipping_address' => ['required', 'array'],
+            'shipping_address.full_name' => ['nullable', 'string', 'max:255'],
+            'shipping_address.phone' => ['nullable', 'string', 'max:20'],
             'shipping_address.line1' => ['required', 'string', 'max:255'],
             'shipping_address.line2' => ['nullable', 'string', 'max:255'],
             'shipping_address.city' => ['required', 'string', 'max:100'],
@@ -27,7 +29,11 @@ class CheckoutRequest extends FormRequest
             'billing_address.state' => ['required_with:billing_address', 'string', 'max:100'],
             'billing_address.postal_code' => ['required_with:billing_address', 'string', 'max:20'],
             'billing_address.country' => ['required_with:billing_address', 'string', 'max:100'],
+            'payment_method' => ['nullable', 'string', 'in:cod,qrph'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'direct_buy' => ['sometimes', 'array'],
+            'direct_buy.product_id' => ['required_with:direct_buy', 'integer', 'exists:products,id'],
+            'direct_buy.quantity' => ['required_with:direct_buy', 'integer', 'min:1'],
         ];
     }
 }

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
+import HomeRecommendations from '@/components/HomeRecommendations';
 
 const categories = [
   { name: 'T-Shirts', slug: 't-shirts', accent: 'from-sari-300/40 to-sari-500/20' },
@@ -96,23 +97,7 @@ export default function HomePage() {
         </section>
 
         {/* Recommended For You */}
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-white" />
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-            <h2 className="font-display text-3xl md:text-4xl text-gray-900 mb-3">
-              Recommended For You
-            </h2>
-            <p className="text-gray-500 max-w-md">
-              Sign in to see personalized recommendations powered by AI.
-            </p>
-            <Link
-              href="/login"
-              className="inline-flex items-center mt-6 text-sm font-medium text-sari-600 hover:text-sari-700 transition-colors"
-            >
-              Sign in to get started &rarr;
-            </Link>
-          </div>
-        </section>
+        <HomeRecommendations />
       </main>
     </>
   );

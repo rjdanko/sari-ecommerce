@@ -50,6 +50,44 @@ class OrderController extends Controller
     }
 
     /**
+     * Business: Confirm an order.
+     */
+    public function confirmOrder(Request $request, Order $order): JsonResponse
+    {
+        $this->authorize('updateStatus', $order);
+
+        if ($order->status !== 'pending_confirmation') {
+            return response()->json(['error' => 'Order cannot be confirmed in its current state.'], 422);
+        }
+
+        $order->update([
+            'status' => 'confirmed',
+            'confirmed_at' => now(),
+        ]);
+
+        return response()->json($order->fresh()->load('items'));
+    }
+
+    /**
+     * Customer: Cancel an order (only before store confirmation).
+     */
+    public function cancelOrder(Request $request, Order $order): JsonResponse
+    {
+        $this->authorize('view', $order);
+
+        if ($order->status !== 'pending_confirmation') {
+            return response()->json(['error' => 'Order can only be cancelled before store confirmation.'], 422);
+        }
+
+        $order->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now(),
+        ]);
+
+        return response()->json($order->fresh()->load('items'));
+    }
+
+    /**
      * Business/Admin: Update order status (e.g., mark as shipped).
      * IDOR: OrderPolicy verifies the user has permission for this order
      */
@@ -58,7 +96,7 @@ class OrderController extends Controller
         $this->authorize('updateStatus', $order);
 
         $request->validate([
-            'status' => ['required', 'string', 'in:processing,shipped,delivered,cancelled'],
+            'status' => ['required', 'string', 'in:pending_confirmation,confirmed,processing,shipped,delivered,cancelled'],
         ]);
 
         $order->update([
