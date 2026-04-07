@@ -32,6 +32,12 @@ class ProductResource extends JsonResource
                 'id' => $this->business->id,
                 'name' => $this->business->full_name,
             ]),
+            'store' => $this->whenLoaded('store', fn () => $this->store ? [
+                'id' => $this->store->id,
+                'name' => $this->store->name,
+                'slug' => $this->store->slug,
+                'logo_url' => $this->store->logo_url,
+            ] : null),
             'created_at' => $this->created_at,
         ];
     }

@@ -1,222 +1,15 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import ProductCard from '@/components/ProductCard';
 import SidebarFilter from '@/components/SidebarFilter';
 import ProductComparisonModal from '@/components/ProductComparisonModal';
-import { SlidersHorizontal, LayoutGrid, Rows3 } from 'lucide-react';
+import { SlidersHorizontal, LayoutGrid, Rows3, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import api from '@/lib/api';
 import type { Product } from '@/types/product';
-
-// ── Mock data ───────────────────────────────────────────────
-const mockProducts: Product[] = [
-  {
-    id: 1,
-    name: 'Classic Cotton Crew Neck T-Shirt',
-    slug: 'classic-cotton-crew-neck',
-    description: 'Soft breathable cotton tee for everyday comfort.',
-    short_description: 'Everyday cotton tee.',
-    base_price: 599,
-    compare_at_price: 899,
-    sku: 'TSH-001',
-    stock_quantity: 45,
-    status: 'active',
-    brand: 'SARI Basics',
-    is_featured: true,
-    category: { id: 1, name: 'T-Shirts', slug: 't-shirts', description: null, image_url: null },
-    images: [],
-    primary_image: null,
-  },
-  {
-    id: 2,
-    name: 'Slim Fit Stretch Denim Jeans',
-    slug: 'slim-fit-stretch-denim',
-    description: 'Modern slim fit with comfortable stretch.',
-    short_description: 'Slim stretch denim.',
-    base_price: 1899,
-    compare_at_price: 2499,
-    sku: 'JNS-001',
-    stock_quantity: 30,
-    status: 'active',
-    brand: 'SARI Denim',
-    is_featured: true,
-    category: { id: 2, name: 'Jeans', slug: 'jeans', description: null, image_url: null },
-    images: [],
-    primary_image: null,
-  },
-  {
-    id: 3,
-    name: 'Floral Wrap Midi Dress',
-    slug: 'floral-wrap-midi-dress',
-    description: 'Elegant floral wrap dress perfect for any occasion.',
-    short_description: 'Floral wrap dress.',
-    base_price: 2299,
-    compare_at_price: null,
-    sku: 'DRS-001',
-    stock_quantity: 18,
-    status: 'active',
-    brand: 'SARI Collection',
-    is_featured: false,
-    category: { id: 3, name: 'Dresses', slug: 'dresses', description: null, image_url: null },
-    images: [],
-    primary_image: null,
-  },
-  {
-    id: 4,
-    name: 'Leather Biker Jacket',
-    slug: 'leather-biker-jacket',
-    description: 'Classic biker jacket crafted from genuine leather.',
-    short_description: 'Classic leather jacket.',
-    base_price: 5499,
-    compare_at_price: 6999,
-    sku: 'JKT-001',
-    stock_quantity: 8,
-    status: 'active',
-    brand: 'SARI Premium',
-    is_featured: true,
-    category: { id: 4, name: 'Jackets', slug: 'jackets', description: null, image_url: null },
-    images: [],
-    primary_image: null,
-  },
-  {
-    id: 5,
-    name: 'Oversized Graphic Print Tee',
-    slug: 'oversized-graphic-print-tee',
-    description: 'Bold graphic print on relaxed oversized silhouette.',
-    short_description: 'Oversized graphic tee.',
-    base_price: 799,
-    compare_at_price: null,
-    sku: 'TSH-002',
-    stock_quantity: 62,
-    status: 'active',
-    brand: 'SARI Street',
-    is_featured: false,
-    category: { id: 1, name: 'T-Shirts', slug: 't-shirts', description: null, image_url: null },
-    images: [],
-    primary_image: null,
-  },
-  {
-    id: 6,
-    name: 'Wide Leg High-Waist Trousers',
-    slug: 'wide-leg-high-waist-trousers',
-    description: 'Flowing wide-leg trousers with flattering high waist.',
-    short_description: 'Wide-leg trousers.',
-    base_price: 1599,
-    compare_at_price: 1999,
-    sku: 'JNS-002',
-    stock_quantity: 22,
-    status: 'active',
-    brand: 'SARI Collection',
-    is_featured: false,
-    category: { id: 2, name: 'Jeans', slug: 'jeans', description: null, image_url: null },
-    images: [],
-    primary_image: null,
-  },
-  {
-    id: 7,
-    name: 'Satin Slip Evening Dress',
-    slug: 'satin-slip-evening-dress',
-    description: 'Luxurious satin slip dress for evening occasions.',
-    short_description: 'Satin evening dress.',
-    base_price: 3499,
-    compare_at_price: null,
-    sku: 'DRS-002',
-    stock_quantity: 12,
-    status: 'active',
-    brand: 'SARI Premium',
-    is_featured: true,
-    category: { id: 3, name: 'Dresses', slug: 'dresses', description: null, image_url: null },
-    images: [],
-    primary_image: null,
-  },
-  {
-    id: 8,
-    name: 'Quilted Puffer Jacket',
-    slug: 'quilted-puffer-jacket',
-    description: 'Warm quilted puffer with water-resistant finish.',
-    short_description: 'Quilted puffer jacket.',
-    base_price: 3299,
-    compare_at_price: 4199,
-    sku: 'JKT-002',
-    stock_quantity: 15,
-    status: 'active',
-    brand: 'SARI Outdoors',
-    is_featured: false,
-    category: { id: 4, name: 'Jackets', slug: 'jackets', description: null, image_url: null },
-    images: [],
-    primary_image: null,
-  },
-  {
-    id: 9,
-    name: 'Ribbed Tank Top',
-    slug: 'ribbed-tank-top',
-    description: 'Versatile ribbed tank for layering or solo wear.',
-    short_description: 'Ribbed tank top.',
-    base_price: 449,
-    compare_at_price: null,
-    sku: 'TSH-003',
-    stock_quantity: 80,
-    status: 'active',
-    brand: 'SARI Basics',
-    is_featured: false,
-    category: { id: 1, name: 'T-Shirts', slug: 't-shirts', description: null, image_url: null },
-    images: [],
-    primary_image: null,
-  },
-  {
-    id: 10,
-    name: 'Embroidered Boho Maxi Dress',
-    slug: 'embroidered-boho-maxi-dress',
-    description: 'Flowing maxi dress with intricate embroidery details.',
-    short_description: 'Embroidered maxi dress.',
-    base_price: 2799,
-    compare_at_price: 3299,
-    sku: 'DRS-003',
-    stock_quantity: 9,
-    status: 'active',
-    brand: 'SARI Collection',
-    is_featured: true,
-    category: { id: 3, name: 'Dresses', slug: 'dresses', description: null, image_url: null },
-    images: [],
-    primary_image: null,
-  },
-  {
-    id: 11,
-    name: 'Canvas Sneaker Low-Top',
-    slug: 'canvas-sneaker-low-top',
-    description: 'Casual canvas sneakers for everyday style.',
-    short_description: 'Canvas low-top sneakers.',
-    base_price: 1299,
-    compare_at_price: null,
-    sku: 'ACC-001',
-    stock_quantity: 40,
-    status: 'active',
-    brand: 'SARI Street',
-    is_featured: false,
-    category: { id: 5, name: 'Accessories', slug: 'accessories', description: null, image_url: null },
-    images: [],
-    primary_image: null,
-  },
-  {
-    id: 12,
-    name: 'Woven Leather Belt',
-    slug: 'woven-leather-belt',
-    description: 'Hand-woven leather belt with brushed metal buckle.',
-    short_description: 'Woven leather belt.',
-    base_price: 899,
-    compare_at_price: 1199,
-    sku: 'ACC-002',
-    stock_quantity: 35,
-    status: 'active',
-    brand: 'SARI Premium',
-    is_featured: false,
-    category: { id: 5, name: 'Accessories', slug: 'accessories', description: null, image_url: null },
-    images: [],
-    primary_image: null,
-  },
-];
 
 // ── Page Component ──────────────────────────────────────────
 export default function ProductsPage() {
@@ -228,6 +21,8 @@ export default function ProductsPage() {
 }
 
 function ProductsPageContent() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
@@ -235,15 +30,60 @@ function ProductsPageContent() {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [gridCols, setGridCols] = useState<3 | 4>(3);
   const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const searchParams = useSearchParams();
 
-  // Handle ?ai=compare query param — enable comparison mode
-  useEffect(() => {
-    if (searchParams.get('ai') === 'compare') {
-      // Auto-select first 2 products for comparison when arriving from homepage
-      setCompareIds(new Set(mockProducts.slice(0, 2).map((p) => p.id)));
+  const fetchProducts = useCallback(async (pageNum = 1, append = false) => {
+    if (pageNum === 1) setLoading(true);
+    else setLoadingMore(true);
+
+    try {
+      const params: Record<string, string | number> = {
+        per_page: 20,
+        page: pageNum,
+        sort: sortBy,
+      };
+      if (activeCategory !== 'all') params.category = activeCategory;
+
+      const res = await api.get('/api/products', { params });
+      const data = res.data;
+      const newProducts: Product[] = data.data ?? [];
+
+      if (append) {
+        setProducts((prev) => [...prev, ...newProducts]);
+      } else {
+        setProducts(newProducts);
+      }
+
+      setHasMore(data.current_page < data.last_page);
+      setPage(data.current_page);
+    } catch {
+      if (!append) setProducts([]);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
     }
+  }, [activeCategory, sortBy]);
+
+  // Re-fetch when filters change
+  useEffect(() => {
+    fetchProducts(1);
+  }, [fetchProducts]);
+
+  // Handle ?category= from URL
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    if (cat) setActiveCategory(cat);
   }, [searchParams]);
+
+  // Handle ?ai=compare query param
+  useEffect(() => {
+    if (searchParams.get('ai') === 'compare' && products.length >= 2) {
+      setCompareIds(new Set(products.slice(0, 2).map((p) => p.id)));
+    }
+  }, [searchParams, products]);
 
   const handleCompareToggle = (productId: number, checked: boolean) => {
     setCompareIds((prev) => {
@@ -257,30 +97,16 @@ function ProductsPageContent() {
     });
   };
 
-  // Filter products
-  const filtered = mockProducts.filter((p) => {
-    if (activeCategory !== 'all' && p.category.slug !== activeCategory)
-      return false;
-    if (p.base_price < priceRange[0] || p.base_price > priceRange[1])
-      return false;
-    return true;
-  });
-
-  // Sort products
-  const sorted = [...filtered].sort((a, b) => {
-    switch (sortBy) {
-      case 'price_asc':
-        return a.base_price - b.base_price;
-      case 'price_desc':
-        return b.base_price - a.base_price;
-      case 'popular':
-        return b.stock_quantity - a.stock_quantity;
-      case 'rating':
-        // Deterministic rating formula matching ProductCard
-        return ((b.id * 7 + 3) % 20 + 30) - ((a.id * 7 + 3) % 20 + 30);
-      default:
-        return b.id - a.id;
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchProducts(page + 1, true);
     }
+  };
+
+  // Client-side price filter (API doesn't support price range)
+  const filtered = products.filter((p) => {
+    if (p.base_price < priceRange[0] || p.base_price > priceRange[1]) return false;
+    return true;
   });
 
   return (
@@ -289,7 +115,6 @@ function ProductsPageContent() {
       <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
         {/* Page header */}
         <div className="relative overflow-hidden bg-gradient-to-r from-sari-50 via-white to-sari-50 border-b border-gray-100">
-          {/* Subtle decorative dot pattern */}
           <div
             className="absolute inset-0 opacity-[0.03]"
             style={{
@@ -321,7 +146,7 @@ function ProductsPageContent() {
               Filters
             </button>
             <span className="text-sm text-gray-400">
-              {sorted.length} product{sorted.length !== 1 ? 's' : ''}
+              {filtered.length} product{filtered.length !== 1 ? 's' : ''}
             </span>
           </div>
 
@@ -345,9 +170,9 @@ function ProductsPageContent() {
                 <p className="text-sm text-gray-500">
                   Showing{' '}
                   <span className="font-medium text-gray-900">
-                    {sorted.length}
+                    {filtered.length}
                   </span>{' '}
-                  product{sorted.length !== 1 ? 's' : ''}
+                  product{filtered.length !== 1 ? 's' : ''}
                 </p>
                 <div className="flex items-center gap-2">
                   <button
@@ -402,8 +227,8 @@ function ProductsPageContent() {
                 </div>
               )}
 
-              {/* Product grid */}
-              {sorted.length > 0 ? (
+              {/* Loading skeleton */}
+              {loading ? (
                 <div
                   className={cn(
                     'grid gap-5',
@@ -412,20 +237,59 @@ function ProductsPageContent() {
                       : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
                   )}
                 >
-                  {sorted.map((product, i) => (
-                    <div
-                      key={product.id}
-                      className="animate-fade-in"
-                      style={{ animationDelay: `${i * 50}ms` }}
-                    >
-                      <ProductCard
-                        product={product}
-                        onCompareToggle={handleCompareToggle}
-                        isComparing={compareIds.has(product.id)}
-                      />
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="aspect-[3/4] rounded-2xl bg-gray-200" />
+                      <div className="mt-3 h-4 w-2/3 rounded bg-gray-200" />
+                      <div className="mt-2 h-3 w-1/3 rounded bg-gray-200" />
                     </div>
                   ))}
                 </div>
+              ) : filtered.length > 0 ? (
+                <>
+                  <div
+                    className={cn(
+                      'grid gap-5',
+                      gridCols === 4
+                        ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+                        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+                    )}
+                  >
+                    {filtered.map((product, i) => (
+                      <div
+                        key={product.id}
+                        className="animate-fade-in"
+                        style={{ animationDelay: `${i * 50}ms` }}
+                      >
+                        <ProductCard
+                          product={product}
+                          onCompareToggle={handleCompareToggle}
+                          isComparing={compareIds.has(product.id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Load More */}
+                  {hasMore && (
+                    <div className="mt-8 flex justify-center">
+                      <button
+                        onClick={loadMore}
+                        disabled={loadingMore}
+                        className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 transition-all hover:border-sari-300 hover:text-sari-700 disabled:opacity-50"
+                      >
+                        {loadingMore ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          'Load More Products'
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
                   <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
@@ -457,7 +321,7 @@ function ProductsPageContent() {
       {/* AI Comparison Modal */}
       {comparisonOpen && compareIds.size >= 2 && (
         <ProductComparisonModal
-          products={mockProducts.filter((p) => compareIds.has(p.id))}
+          products={products.filter((p) => compareIds.has(p.id))}
           onClose={() => setComparisonOpen(false)}
         />
       )}

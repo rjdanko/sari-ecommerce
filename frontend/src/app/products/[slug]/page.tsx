@@ -232,6 +232,23 @@ export default function ProductDetailPage() {
                 {product.name}
               </h1>
 
+              {/* Sold by */}
+              {product.store && (
+                <Link
+                  href={`/store/${product.store.slug}`}
+                  className="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-gray-500 hover:text-sari-600 transition-colors"
+                >
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-gray-100">
+                    {product.store.logo_url ? (
+                      <img src={product.store.logo_url} alt={product.store.name} className="h-full w-full rounded-md object-cover" />
+                    ) : (
+                      <span className="text-[9px] font-bold text-gray-400">S</span>
+                    )}
+                  </span>
+                  Sold by {product.store.name}
+                </Link>
+              )}
+
               {/* Rating */}
               <div className="flex items-center gap-2 mt-3">
                 <div className="flex items-center gap-0.5">

@@ -44,6 +44,11 @@ class User extends Authenticatable
         return $this->hasMany(Product::class, 'business_id');
     }
 
+    public function store()
+    {
+        return $this->hasOne(Store::class);
+    }
+
     public function searchHistories()
     {
         return $this->hasMany(SearchHistory::class);

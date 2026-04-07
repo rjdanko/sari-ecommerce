@@ -1,3 +1,15 @@
+export interface Store {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  logo_url: string | null;
+  banner_url: string | null;
+  address: string | null;
+  phone: string | null;
+  is_active: boolean;
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -14,6 +26,7 @@ export interface Product {
   category: Category;
   images: ProductImage[];
   primary_image: ProductImage | null;
+  store?: Store | null;
 }
 
 export interface Category {

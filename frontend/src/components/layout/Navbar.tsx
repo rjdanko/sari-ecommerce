@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Heart, ShoppingCart, Search, Menu, X } from 'lucide-react';
@@ -22,13 +23,15 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-1.5 group">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-sari-400 to-sari-600 text-white font-bold text-lg shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-200">
-              S
-            </span>
-            <span className="font-display text-xl tracking-tight text-gray-900">
-              SARI
-            </span>
+          <Link href="/" className="flex items-center group">
+            <Image
+              src="/Sari_Logo.png"
+              alt="SARI"
+              width={180}
+              height={60}
+              className="h-16 w-auto group-hover:scale-105 transition-transform duration-200"
+              priority
+            />
           </Link>
 
           {/* Desktop Nav Links */}
@@ -102,11 +105,6 @@ export default function Navbar() {
                   {hasRole('business') && (
                     <Link href="/business/dashboard" className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                       Business Dashboard
-                    </Link>
-                  )}
-                  {hasRole('admin') && (
-                    <Link href="/admin" className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                      Admin Panel
                     </Link>
                   )}
                   <div className="my-1 border-t border-gray-100" />

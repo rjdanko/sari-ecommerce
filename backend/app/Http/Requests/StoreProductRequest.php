@@ -29,6 +29,10 @@ class StoreProductRequest extends FormRequest
             'attributes.*' => ['string', 'max:255'],
             'images' => ['nullable', 'array', 'max:10'],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'option_categories' => ['nullable', 'array', 'max:5'],
+            'option_categories.*.name' => ['required_with:option_categories', 'string', 'max:100'],
+            'option_categories.*.values' => ['required_with:option_categories', 'array', 'min:1', 'max:20'],
+            'option_categories.*.values.*' => ['string', 'max:100'],
         ];
     }
 }

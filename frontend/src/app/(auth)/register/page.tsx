@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import Navbar from '@/components/layout/Navbar';
 
@@ -46,11 +47,15 @@ export default function RegisterPage() {
 
         <div className="relative w-full max-w-md animate-slide-up">
           <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-sari-400 to-sari-600 text-white font-bold text-xl shadow-md">
-                S
-              </span>
-              <span className="font-display text-2xl tracking-tight text-gray-900">SARI</span>
+            <Link href="/" className="inline-flex items-center">
+              <Image
+                src="/Sari_Logo_Icon.png"
+                alt="SARI"
+                width={180}
+                height={60}
+                className="h-16 w-auto"
+                priority
+              />
             </Link>
             <h1 className="mt-6 font-display text-3xl text-gray-900">Create Account</h1>
             <p className="text-gray-500 text-sm mt-1.5">Join SARI today</p>

@@ -12,7 +12,7 @@ class Product extends Model
     use HasFactory, SoftDeletes, Searchable;
 
     protected $fillable = [
-        'category_id', 'business_id', 'name', 'slug', 'description',
+        'category_id', 'business_id', 'store_id', 'name', 'slug', 'description',
         'short_description', 'base_price', 'compare_at_price', 'sku',
         'stock_quantity', 'low_stock_threshold', 'status', 'brand',
         'attributes', 'weight', 'is_featured', 'view_count',
@@ -75,6 +75,11 @@ class Product extends Model
     public function business()
     {
         return $this->belongsTo(User::class, 'business_id');
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(Store::class);
     }
 
     public function variants()

@@ -5,21 +5,22 @@ namespace App\Http\Controllers\Auth;
 use App\Enums\RoleEnum;
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
+use Symfony\Component\HttpFoundation\Response;
 
 class GoogleAuthController extends Controller
 {
-    public function redirect(): JsonResponse
+    public function redirect(): Response
     {
-        return response()->json([
-            'url' => Socialite::driver('google')->stateless()->redirect()->getTargetUrl(),
-        ]);
+        return Socialite::driver('google')->stateless()->redirect();
     }
 
-    public function callback(): JsonResponse
+    public function callback(): RedirectResponse
     {
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
 
@@ -41,12 +42,9 @@ class GoogleAuthController extends Controller
             Auth::login($user);
             request()->session()->regenerate();
 
-            return response()->json([
-                'message' => 'Google login successful.',
-                'user' => $user->load('roles'),
-            ]);
+            return redirect()->to($frontendUrl);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Google login failed.', 'error' => $e->getMessage()], 401);
+            return redirect()->to($frontendUrl . '/login?error=google_auth_failed');
         }
     }
 }

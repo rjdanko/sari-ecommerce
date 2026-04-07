@@ -24,6 +24,7 @@ Route::middleware('throttle:public-api')->group(function () {
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/categories/{slug}', [CategoryController::class, 'show']);
     Route::get('/recommendations/popular', [RecommendationController::class, 'popular']);
+    Route::get('/stores/{slug}', [App\Http\Controllers\StoreController::class, 'show']);
 });
 
 // AUTH ROUTES — Strictest rate limit (5/min per IP)
@@ -74,6 +75,10 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
     // BUSINESS ROUTES — Requires 'business' or 'admin' role
     // ====================================================================
     Route::middleware('role:business|admin')->prefix('business')->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\Business\DashboardController::class, 'index']);
+        Route::post('/store', [App\Http\Controllers\StoreController::class, 'store']);
+        Route::put('/store', [App\Http\Controllers\StoreController::class, 'update']);
+        Route::get('/store', [App\Http\Controllers\StoreController::class, 'myStore']);
         Route::get('/products', [ProductController::class, 'myProducts']);
         Route::post('/products', [ProductController::class, 'store']);
         Route::put('/products/{product}', [ProductController::class, 'update']);

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, DM_Serif_Display } from "next/font/google";
+import Footer from "@/components/layout/Footer";
 import "./globals.css";
 
 const inter = Inter({
@@ -27,7 +28,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.className} ${dmSerif.variable}`}>
-      <body>{children}</body>
+      <body className="flex flex-col min-h-screen">
+        <div className="flex-1">{children}</div>
+        <Footer />
+      </body>
     </html>
   );
 }
