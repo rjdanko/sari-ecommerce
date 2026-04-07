@@ -67,6 +67,7 @@ return [
             'region' => env('SUPABASE_REGION', 'ap-southeast-1'),
             'bucket' => env('SUPABASE_BUCKET_NAME', 'product-images'),
             'endpoint' => env('SUPABASE_ENDPOINT'),
+            'url' => env('SUPABASE_PUBLIC_URL'),
             'use_path_style_endpoint' => true,
         ],
 

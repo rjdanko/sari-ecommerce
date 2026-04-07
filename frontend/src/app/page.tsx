@@ -3,10 +3,10 @@ import Navbar from '@/components/layout/Navbar';
 import HomeRecommendations from '@/components/HomeRecommendations';
 
 const categories = [
-  { name: 'T-Shirts', slug: 't-shirts', accent: 'from-sari-300/40 to-sari-500/20' },
-  { name: 'Jeans', slug: 'jeans', accent: 'from-blue-300/40 to-blue-500/20' },
-  { name: 'Dresses', slug: 'dresses', accent: 'from-rose-300/40 to-rose-500/20' },
-  { name: 'Jackets', slug: 'jackets', accent: 'from-stone-300/40 to-stone-500/20' },
+  { name: 'T-Shirts', slug: 't-shirts', accent: 'from-sari-100 to-sari-50', iconBg: 'bg-sari-200/60', textColor: 'text-sari-800', subtextColor: 'text-sari-600/70', hoverBorder: 'hover:border-sari-300', ringColor: 'ring-sari-200' },
+  { name: 'Jeans', slug: 'jeans', accent: 'from-blue-100 to-blue-50', iconBg: 'bg-blue-200/60', textColor: 'text-blue-800', subtextColor: 'text-blue-600/70', hoverBorder: 'hover:border-blue-300', ringColor: 'ring-blue-200' },
+  { name: 'Dresses', slug: 'dresses', accent: 'from-rose-100 to-rose-50', iconBg: 'bg-rose-200/60', textColor: 'text-rose-800', subtextColor: 'text-rose-600/70', hoverBorder: 'hover:border-rose-300', ringColor: 'ring-rose-200' },
+  { name: 'Jackets', slug: 'jackets', accent: 'from-stone-100 to-stone-50', iconBg: 'bg-stone-200/60', textColor: 'text-stone-800', subtextColor: 'text-stone-600/70', hoverBorder: 'hover:border-stone-300', ringColor: 'ring-stone-200' },
 ];
 
 export default function HomePage() {
@@ -75,22 +75,23 @@ export default function HomePage() {
               <Link
                 key={cat.slug}
                 href={`/categories/${cat.slug}`}
-                className="group relative aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100"
+                className={`group relative rounded-2xl overflow-hidden border border-gray-100 ${cat.hoverBorder} bg-gradient-to-br ${cat.accent} p-6 flex flex-col justify-between aspect-[3/4] transition-all duration-300 hover:shadow-lg hover:shadow-gray-200/50 hover:-translate-y-1`}
                 style={{ animationDelay: `${i * 100}ms` }}
               >
-                {/* Gradient overlay */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${cat.accent} group-hover:opacity-80 transition-opacity duration-300`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/70 via-gray-900/20 to-transparent z-10" />
-                <div className="absolute bottom-0 left-0 right-0 p-5 z-20">
-                  <h3 className="text-white font-semibold text-lg tracking-tight">
+                {/* Decorative circle */}
+                <div className={`w-12 h-12 rounded-xl ${cat.iconBg} flex items-center justify-center transition-transform duration-300 group-hover:scale-110`}>
+                  <span className={`text-lg font-bold ${cat.textColor}`}>
+                    {cat.name.charAt(0)}
+                  </span>
+                </div>
+                <div>
+                  <h3 className={`font-semibold text-lg tracking-tight ${cat.textColor}`}>
                     {cat.name}
                   </h3>
-                  <span className="inline-flex items-center mt-1 text-white/70 text-xs font-medium opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                  <span className={`inline-flex items-center mt-1 ${cat.subtextColor} text-xs font-medium opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300`}>
                     Explore &rarr;
                   </span>
                 </div>
-                {/* Hover scale effect */}
-                <div className="absolute inset-0 bg-gray-200/30 group-hover:scale-105 transition-transform duration-500" />
               </Link>
             ))}
           </div>

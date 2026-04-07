@@ -32,11 +32,21 @@ interface Review {
   created_at: string;
 }
 
+interface ProductVariant {
+  id: number;
+  name: string;
+  sku: string;
+  price: number;
+  stock_quantity: number;
+  options: Record<string, string>;
+  is_active: boolean;
+}
+
 interface ProductDetail extends Product {
   reviews?: Review[];
   material?: string;
   style?: string;
-  variants?: { sizes?: string[]; colors?: string[] };
+  variants?: ProductVariant[];
 }
 
 export default function ProductDetailPage() {
@@ -92,8 +102,21 @@ export default function ProductDetailPage() {
   const rating = product ? ((product.id * 7 + 3) % 20 + 30) / 10 : 0;
   const reviewCount = product ? (product.id * 13 + 5) % 90 + 5 : 0;
 
-  const sizes = product?.variants?.sizes ?? ['S', 'M', 'L', 'XL', 'XXL'];
-  const colors = product?.variants?.colors ?? ['White', 'Black', 'Gray'];
+  // Extract unique option values from actual variant data
+  const optionMap = new Map<string, string[]>();
+  if (product?.variants && Array.isArray(product.variants)) {
+    for (const variant of product.variants) {
+      if (variant.options && typeof variant.options === 'object') {
+        for (const [key, value] of Object.entries(variant.options)) {
+          if (!optionMap.has(key)) optionMap.set(key, []);
+          const values = optionMap.get(key)!;
+          if (!values.includes(value as string)) values.push(value as string);
+        }
+      }
+    }
+  }
+  const sizes = optionMap.get('size') ?? [];
+  const colors = optionMap.get('color') ?? [];
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -122,6 +145,7 @@ export default function ProductDetailPage() {
     const params = new URLSearchParams({
       direct: '1',
       product_id: product.id.toString(),
+      slug: product.slug,
       quantity: quantity.toString(),
     });
     window.location.href = `/checkout?${params.toString()}`;
@@ -321,46 +345,50 @@ export default function ProductDetailPage() {
               <div className="border-t border-gray-100 my-6" />
 
               {/* Size Selector */}
-              <div className="mb-5">
-                <span className="block text-sm font-medium text-gray-700 mb-2.5">Size</span>
-                <div className="flex flex-wrap gap-2">
-                  {sizes.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={cn(
-                        'px-4 py-2 rounded-full text-sm font-medium border-2 transition-all duration-200',
-                        selectedSize === size
-                          ? 'border-sari-500 bg-sari-50 text-sari-800 shadow-sm'
-                          : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50',
-                      )}
-                    >
-                      {size}
-                    </button>
-                  ))}
+              {sizes.length > 0 && (
+                <div className="mb-5">
+                  <span className="block text-sm font-medium text-gray-700 mb-2.5">Size</span>
+                  <div className="flex flex-wrap gap-2">
+                    {sizes.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        className={cn(
+                          'px-4 py-2 rounded-full text-sm font-medium border-2 transition-all duration-200',
+                          selectedSize === size
+                            ? 'border-sari-500 bg-sari-50 text-sari-800 shadow-sm'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50',
+                        )}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Color Selector */}
-              <div className="mb-5">
-                <span className="block text-sm font-medium text-gray-700 mb-2.5">Color</span>
-                <div className="flex flex-wrap gap-2">
-                  {colors.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
-                      className={cn(
-                        'px-4 py-2 rounded-full text-sm font-medium border-2 transition-all duration-200',
-                        selectedColor === color
-                          ? 'border-sari-500 bg-sari-50 text-sari-800 shadow-sm'
-                          : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50',
-                      )}
-                    >
-                      {color}
-                    </button>
-                  ))}
+              {colors.length > 0 && (
+                <div className="mb-5">
+                  <span className="block text-sm font-medium text-gray-700 mb-2.5">Color</span>
+                  <div className="flex flex-wrap gap-2">
+                    {colors.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setSelectedColor(color)}
+                        className={cn(
+                          'px-4 py-2 rounded-full text-sm font-medium border-2 transition-all duration-200',
+                          selectedColor === color
+                            ? 'border-sari-500 bg-sari-50 text-sari-800 shadow-sm'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50',
+                        )}
+                      >
+                        {color}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Quantity Picker */}
               <div className="mb-6">

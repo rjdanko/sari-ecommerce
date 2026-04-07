@@ -28,6 +28,15 @@ class Product extends Model
         ];
     }
 
+    /**
+     * Disable auto-indexing until Typesense is properly configured.
+     * Remove this method (or return true) once a valid TYPESENSE_API_KEY is set.
+     */
+    public function shouldBeSearchable(): bool
+    {
+        return !empty(config('scout.typesense.client-settings.api_key'));
+    }
+
     public function toSearchableArray(): array
     {
         return [

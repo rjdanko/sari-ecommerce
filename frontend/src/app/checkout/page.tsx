@@ -43,6 +43,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const isDirect = searchParams.get('direct') === '1';
   const directProductId = searchParams.get('product_id');
+  const directSlug = searchParams.get('slug');
   const directQuantity = parseInt(searchParams.get('quantity') || '1', 10);
 
   const { cart, loading: cartLoading, fetchCart, updateQuantity, removeItem } = useCartContext();
@@ -63,9 +64,10 @@ function CheckoutContent() {
   });
 
   useEffect(() => {
-    if (isDirect && directProductId) {
+    if (isDirect && (directSlug || directProductId)) {
       setDirectLoading(true);
-      api.get(`/api/products/${directProductId}`).then(({ data }) => {
+      const identifier = directSlug || directProductId;
+      api.get(`/api/products/${identifier}`).then(({ data }) => {
         setDirectProduct(data.data ?? data);
       }).catch(() => {
         // product fetch failed
@@ -75,7 +77,7 @@ function CheckoutContent() {
     } else {
       fetchCart();
     }
-  }, [isDirect, directProductId, fetchCart]);
+  }, [isDirect, directSlug, directProductId, fetchCart]);
 
   // Build display items — either direct product or cart items
   const displayItems = isDirect && directProduct

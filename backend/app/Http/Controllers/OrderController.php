@@ -56,13 +56,12 @@ class OrderController extends Controller
     {
         $this->authorize('updateStatus', $order);
 
-        if ($order->status !== 'pending_confirmation') {
+        if ($order->status !== 'pending') {
             return response()->json(['error' => 'Order cannot be confirmed in its current state.'], 422);
         }
 
         $order->update([
-            'status' => 'confirmed',
-            'confirmed_at' => now(),
+            'status' => 'processing',
         ]);
 
         return response()->json($order->fresh()->load('items'));
@@ -75,7 +74,7 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        if ($order->status !== 'pending_confirmation') {
+        if ($order->status !== 'pending') {
             return response()->json(['error' => 'Order can only be cancelled before store confirmation.'], 422);
         }
 
@@ -96,7 +95,7 @@ class OrderController extends Controller
         $this->authorize('updateStatus', $order);
 
         $request->validate([
-            'status' => ['required', 'string', 'in:pending_confirmation,confirmed,processing,shipped,delivered,cancelled'],
+            'status' => ['required', 'string', 'in:pending,processing,paid,shipped,delivered,cancelled,refunded'],
         ]);
 
         $order->update([

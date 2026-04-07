@@ -62,7 +62,7 @@ class CheckoutController extends Controller
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
                 'user_id' => $user->id,
-                'status' => 'pending_confirmation',
+                'status' => 'pending',
                 'subtotal' => $subtotal,
                 'shipping_fee' => 0,
                 'tax' => 0,
