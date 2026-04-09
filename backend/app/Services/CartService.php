@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Support\Facades\Redis;
 
 class CartService
@@ -27,10 +28,25 @@ class CartService
             $decoded = json_decode($data, true);
             $product = Product::with('primaryImage')->find($productId);
             if ($product) {
+                $variantId = $decoded['variant_id'] ?? null;
+                $variantData = null;
+
+                if ($variantId) {
+                    $variant = ProductVariant::find($variantId);
+                    if ($variant) {
+                        $variantData = [
+                            'id' => $variant->id,
+                            'options' => $variant->options ?? [],
+                            'price_modifier' => $variant->price ? (float) $variant->price - (float) $product->base_price : null,
+                        ];
+                    }
+                }
+
                 $items[] = [
                     'product_id' => (int) $productId,
                     'quantity' => $decoded['quantity'],
-                    'variant_id' => $decoded['variant_id'] ?? null,
+                    'variant_id' => $variantId,
+                    'variant' => $variantData,
                     'product' => [
                         'id' => $product->id,
                         'name' => $product->name,

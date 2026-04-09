@@ -51,7 +51,7 @@ class ProductController extends Controller
     public function show(string $slug, Request $request): JsonResponse
     {
         $product = Product::where('slug', $slug)
-            ->with('images', 'category', 'variants', 'business', 'store')
+            ->with('primaryImage', 'images', 'category', 'variants', 'business', 'store')
             ->where('status', 'active')
             ->firstOrFail();
 
@@ -73,43 +73,49 @@ class ProductController extends Controller
     {
         $validated = $request->validated();
 
-        $product = Product::create([
-            ...$validated,
-            'business_id' => $request->user()->id,
-            'store_id' => $request->user()->store?->id,
-            'slug' => Str::slug($validated['name']) . '-' . Str::random(5),
-            'status' => 'active',
-        ]);
+        // Disable Scout sync during creation to prevent Typesense errors
+        // from surfacing to the user when the key is missing/invalid.
+        $product = Product::withoutSyncingToSearch(function () use ($validated, $request) {
+            $product = Product::create([
+                ...$validated,
+                'business_id' => $request->user()->id,
+                'store_id' => $request->user()->store?->id,
+                'slug' => Str::slug($validated['name']) . '-' . Str::random(5),
+                'status' => 'active',
+            ]);
 
-        // Upload images
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $i => $file) {
-                $url = $this->imageService->upload($file);
-                $product->images()->create([
-                    'url' => $url,
-                    'is_primary' => $i === 0,
-                    'sort_order' => $i,
-                ]);
+            // Upload images
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $i => $file) {
+                    $url = $this->imageService->upload($file);
+                    $product->images()->create([
+                        'url' => $url,
+                        'is_primary' => $i === 0,
+                        'sort_order' => $i,
+                    ]);
+                }
             }
-        }
 
-        // Auto-generate variants from option categories
-        if ($request->has('option_categories') && !empty($request->option_categories)) {
-            $combinations = $this->generateCombinations($request->option_categories);
-            foreach ($combinations as $combo) {
-                $name = implode(' / ', array_values($combo));
-                $product->variants()->create([
-                    'name' => $name,
-                    'sku' => $product->sku . '-' . Str::upper(Str::random(4)),
-                    'price' => $product->base_price,
-                    'stock_quantity' => $product->stock_quantity,
-                    'options' => $combo,
-                    'is_active' => true,
-                ]);
+            // Auto-generate variants from option categories
+            if ($request->has('option_categories') && !empty($request->option_categories)) {
+                $combinations = $this->generateCombinations($request->option_categories);
+                foreach ($combinations as $combo) {
+                    $name = implode(' / ', array_values($combo));
+                    $product->variants()->create([
+                        'name' => $name,
+                        'sku' => $product->sku . '-' . Str::upper(Str::random(4)),
+                        'price' => $product->base_price,
+                        'stock_quantity' => $product->stock_quantity,
+                        'options' => $combo,
+                        'is_active' => true,
+                    ]);
+                }
             }
-        }
 
-        return response()->json(new ProductResource($product->load('images', 'category', 'variants')), 201);
+            return $product;
+        });
+
+        return response()->json(new ProductResource($product->load('primaryImage', 'images', 'category', 'variants')), 201);
     }
 
     /**
@@ -118,8 +124,52 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, Product $product): JsonResponse
     {
-        $product->update($request->validated());
-        return response()->json(new ProductResource($product->fresh()));
+        Product::withoutSyncingToSearch(function () use ($request, $product) {
+            $product->update($request->validated());
+
+            // Handle new image uploads
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $file) {
+                    $url = $this->imageService->upload($file);
+                    $product->images()->create([
+                        'url' => $url,
+                        'is_primary' => $product->images()->count() === 0,
+                        'sort_order' => $product->images()->count(),
+                    ]);
+                }
+            }
+
+            // Handle image deletions
+            if ($request->has('delete_images')) {
+                $product->images()->whereIn('id', $request->delete_images)->delete();
+                // Ensure there's still a primary image
+                if ($product->images()->where('is_primary', true)->count() === 0) {
+                    $product->images()->first()?->update(['is_primary' => true]);
+                }
+            }
+
+            // Handle option categories update
+            if ($request->has('option_categories')) {
+                $product->variants()->delete();
+                $categories = $request->option_categories;
+                if (!empty($categories)) {
+                    $combinations = $this->generateCombinations($categories);
+                    foreach ($combinations as $combo) {
+                        $name = implode(' / ', array_values($combo));
+                        $product->variants()->create([
+                            'name' => $name,
+                            'sku' => $product->sku . '-' . Str::upper(Str::random(4)),
+                            'price' => $product->base_price,
+                            'stock_quantity' => $product->stock_quantity,
+                            'options' => $combo,
+                            'is_active' => true,
+                        ]);
+                    }
+                }
+            }
+        });
+
+        return response()->json(new ProductResource($product->fresh()->load('primaryImage', 'images', 'category', 'variants')));
     }
 
     /**
@@ -152,6 +202,16 @@ class ProductController extends Controller
             $result = $newResult;
         }
         return $result;
+    }
+
+    /**
+     * Business: Get a single product for editing.
+     * IDOR Prevention: Policy checks product belongs to user
+     */
+    public function showForBusiness(Request $request, Product $product): JsonResponse
+    {
+        $this->authorize('update', $product);
+        return response()->json(new ProductResource($product->load('primaryImage', 'images', 'category', 'variants')));
     }
 
     /**

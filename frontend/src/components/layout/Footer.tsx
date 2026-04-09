@@ -34,8 +34,8 @@ export default function Footer() {
               <Image
                 src="/Sari_Logo.png"
                 alt="SARI"
-                width={140}
-                height={46}
+                width={180}
+                height={60}
                 className="h-16 w-auto"
               />
             </Link>

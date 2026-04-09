@@ -45,6 +45,7 @@ function CheckoutContent() {
   const directProductId = searchParams.get('product_id');
   const directSlug = searchParams.get('slug');
   const directQuantity = parseInt(searchParams.get('quantity') || '1', 10);
+  const directVariantId = searchParams.get('variant_id');
 
   const { cart, loading: cartLoading, fetchCart, updateQuantity, removeItem } = useCartContext();
   const { addToast } = useToast();
@@ -53,6 +54,9 @@ function CheckoutContent() {
   const [error, setError] = useState('');
   const [directProduct, setDirectProduct] = useState<any>(null);
   const [directLoading, setDirectLoading] = useState(false);
+  const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
+  const [deliveryBreakdown, setDeliveryBreakdown] = useState<any>(null);
+  const [estimatingFee, setEstimatingFee] = useState(false);
   const [form, setForm] = useState({
     fullName: '',
     phone: '',
@@ -80,11 +84,18 @@ function CheckoutContent() {
   }, [isDirect, directSlug, directProductId, fetchCart]);
 
   // Build display items — either direct product or cart items
+  const directVariant = isDirect && directProduct && directVariantId
+    ? directProduct.variants?.find((v: any) => v.id === parseInt(directVariantId))
+    : null;
+
   const displayItems = isDirect && directProduct
     ? [{
         product_id: directProduct.id,
         quantity: directQuantity,
-        variant_id: null,
+        variant_id: directVariantId ? parseInt(directVariantId) : null,
+        variant: directVariant
+          ? { id: directVariant.id, options: directVariant.options ?? {}, price_modifier: undefined }
+          : undefined,
         product: {
           id: directProduct.id,
           name: directProduct.name,
@@ -100,10 +111,40 @@ function CheckoutContent() {
     (sum, item) => sum + item.product.base_price * item.quantity,
     0,
   );
-  const total = subtotal;
+  const total = subtotal + (deliveryFee ?? 0);
 
   const updateForm = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Estimate delivery fee when address fields are filled
+  const estimateDeliveryFee = async () => {
+    if (!form.address1 || !form.city) return;
+    const productId = isDirect && directProductId
+      ? parseInt(directProductId)
+      : displayItems[0]?.product_id;
+    if (!productId) return;
+
+    setEstimatingFee(true);
+    try {
+      const { data } = await api.post('/api/delivery-fee/estimate', {
+        product_id: productId,
+        shipping_address: {
+          line1: form.address1,
+          city: form.city,
+          state: form.province,
+          postal_code: form.zip,
+          country: 'PH',
+        },
+      });
+      setDeliveryFee(data.delivery_fee);
+      setDeliveryBreakdown(data.breakdown);
+    } catch {
+      setDeliveryFee(100);
+      setDeliveryBreakdown(null);
+    } finally {
+      setEstimatingFee(false);
+    }
   };
 
   const handleQuantityChange = async (productId: number, newQty: number) => {
@@ -146,15 +187,17 @@ function CheckoutContent() {
         payload.direct_buy = {
           product_id: parseInt(directProductId),
           quantity: directQuantity,
+          variant_id: directVariantId ? parseInt(directVariantId) : null,
         };
       }
 
       const { data } = await api.post('/api/checkout', payload);
 
       if (data.checkout_url) {
-        // Online payment — open PayMongo gateway in new tab
-        window.open(data.checkout_url, '_blank');
-        window.location.href = '/checkout/success';
+        // Online payment — redirect to PayMongo gateway (same tab)
+        // PayMongo will redirect back to success_url or cancel_url
+        window.location.href = data.checkout_url;
+        return;
       } else {
         // COD — redirect directly to success
         window.location.href = data.redirect_url || '/checkout/success';
@@ -272,9 +315,14 @@ function CheckoutContent() {
                     </label>
                     <input
                       type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9+]*"
                       value={form.phone}
-                      onChange={(e) => updateForm('phone', e.target.value)}
-                      placeholder="+63 912 345 6789"
+                      onChange={(e) => {
+                        const numericOnly = e.target.value.replace(/[^0-9+]/g, '');
+                        updateForm('phone', numericOnly);
+                      }}
+                      placeholder="09123456789"
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
                     />
                   </div>
@@ -346,6 +394,27 @@ function CheckoutContent() {
                       placeholder="1100"
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
                     />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <button
+                      type="button"
+                      onClick={estimateDeliveryFee}
+                      disabled={!form.address1 || !form.city || estimatingFee}
+                      className="inline-flex items-center gap-2 text-sm font-medium text-sari-700 hover:text-sari-800 bg-sari-50 hover:bg-sari-100 px-4 py-2.5 rounded-xl border border-sari-200 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {estimatingFee ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          Estimating...
+                        </>
+                      ) : (
+                        <>
+                          <MapPin className="w-3.5 h-3.5" />
+                          Estimate Delivery Fee
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               </section>
@@ -459,6 +528,18 @@ function CheckoutContent() {
                         <p className="text-sm font-medium text-gray-900 truncate">
                           {item.product.name}
                         </p>
+                        {item.variant?.options && Object.keys(item.variant.options).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {Object.entries(item.variant.options).map(([key, value]) => (
+                              <span
+                                key={key}
+                                className="inline-flex items-center text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
+                              >
+                                {key}: {String(value)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         {/* Quantity controls */}
                         <div className="flex items-center gap-1.5 mt-1.5">
                           {!isDirect && (
@@ -511,6 +592,26 @@ function CheckoutContent() {
                   <div className="flex justify-between text-gray-500">
                     <span>Subtotal</span>
                     <span className="font-medium text-gray-700">{formatPrice(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-500">
+                    <span className="flex items-center gap-1">
+                      Delivery Fee
+                      {deliveryBreakdown && (
+                        <span
+                          className="text-[10px] text-gray-400 cursor-help"
+                          title={`Base ₱${deliveryBreakdown.base_fee} (first ${deliveryBreakdown.base_km}km) + ₱${deliveryBreakdown.additional_fee} (${deliveryBreakdown.additional_km}km × ₱${deliveryBreakdown.per_km_rate}/km)`}
+                        >
+                          ⓘ
+                        </span>
+                      )}
+                    </span>
+                    <span className="font-medium text-gray-700">
+                      {estimatingFee
+                        ? '...'
+                        : deliveryFee !== null
+                          ? formatPrice(deliveryFee)
+                          : '—'}
+                    </span>
                   </div>
                 </div>
 

@@ -7,6 +7,8 @@ export interface Store {
   banner_url: string | null;
   address: string | null;
   phone: string | null;
+  latitude: number | null;
+  longitude: number | null;
   is_active: boolean;
 }
 
@@ -23,10 +25,20 @@ export interface Product {
   status: 'draft' | 'active' | 'archived';
   brand: string | null;
   is_featured: boolean;
+  average_rating: number;
+  review_count: number;
   category: Category;
   images: ProductImage[];
   primary_image: ProductImage | null;
   store?: Store | null;
+}
+
+export interface Review {
+  id: number;
+  user_name: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
 }
 
 export interface Category {

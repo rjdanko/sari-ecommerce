@@ -174,6 +174,19 @@ export default function CartPage() {
                         {item.product.name}
                       </Link>
 
+                      {item.variant?.options && Object.keys(item.variant.options).length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {Object.entries(item.variant.options).map(([key, value]) => (
+                            <span
+                              key={key}
+                              className="inline-flex items-center text-[11px] font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md"
+                            >
+                              {key}: {value}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
                       <p className="text-sm text-gray-500 mt-0.5">
                         {formatPrice(item.product.base_price)} each
                       </p>

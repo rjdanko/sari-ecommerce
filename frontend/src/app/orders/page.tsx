@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Package, ChevronDown, ChevronUp, ShoppingBag, XCircle } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
+import CancelOrderModal from '@/components/orders/CancelOrderModal';
 import api from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice, cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ const statusStyles: Record<string, string> = {
   shipped: 'bg-sari-50 text-sari-700',
   delivered: 'bg-green-50 text-green-700',
   cancelled: 'bg-red-50 text-red-700',
+  payment_failed: 'bg-red-50 text-red-600',
 };
 
 const statusLabels: Record<string, string> = {
@@ -31,6 +33,16 @@ const statusLabels: Record<string, string> = {
   shipped: 'Shipped',
   delivered: 'Delivered',
   cancelled: 'Cancelled',
+  payment_failed: 'Payment Failed',
+};
+
+const reasonLabels: Record<string, string> = {
+  changed_mind: 'Changed my mind',
+  found_better_deal: 'Found a better deal',
+  ordered_by_mistake: 'Ordered by mistake',
+  delivery_too_long: 'Delivery takes too long',
+  want_to_change_order: 'Wants to change order',
+  other: 'Other',
 };
 
 function formatDate(date: string): string {
@@ -65,6 +77,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -93,11 +106,13 @@ export default function OrdersPage() {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  const handleCancelOrder = async (orderId: number) => {
+  const handleConfirmCancel = async (reason: string, notes: string | null) => {
+    if (!cancellingOrder) return;
     try {
-      await api.post(`/api/orders/${orderId}/cancel`);
+      await api.post(`/api/orders/${cancellingOrder.id}/cancel`, { reason, notes });
       const { data } = await api.get('/api/orders');
       setOrders(data.data ?? []);
+      setCancellingOrder(null);
       addToast({ type: 'info', title: 'Order cancelled' });
     } catch (err: any) {
       addToast({
@@ -271,11 +286,22 @@ export default function OrdersPage() {
                           </p>
                         </div>
 
+                        {/* Cancellation reason */}
+                        {order.status === 'cancelled' && order.cancellation_reason && (
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <p className="text-sm text-gray-500">
+                              <span className="font-medium text-gray-700">Reason:</span>{' '}
+                              {reasonLabels[order.cancellation_reason] ?? order.cancellation_reason}
+                              {order.cancellation_notes && ` — ${order.cancellation_notes}`}
+                            </p>
+                          </div>
+                        )}
+
                         {/* Cancel button — only for pending_confirmation orders */}
                         {order.status === 'pending_confirmation' && (
                           <div className="mt-4 pt-3 border-t border-gray-200">
                             <button
-                              onClick={() => handleCancelOrder(order.id)}
+                              onClick={() => setCancellingOrder(order)}
                               className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 font-medium transition-colors"
                             >
                               <XCircle className="w-4 h-4" />
@@ -292,6 +318,13 @@ export default function OrdersPage() {
           )}
         </div>
       </main>
+
+      <CancelOrderModal
+        isOpen={!!cancellingOrder}
+        onClose={() => setCancellingOrder(null)}
+        onConfirm={handleConfirmCancel}
+        orderNumber={cancellingOrder?.order_number ?? ''}
+      />
     </>
   );
 }

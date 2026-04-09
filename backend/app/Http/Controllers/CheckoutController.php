@@ -6,6 +6,7 @@ use App\Http\Requests\CheckoutRequest;
 use App\Models\Order;
 use App\Models\Product;
 use App\Services\CartService;
+use App\Services\DeliveryFeeService;
 use App\Services\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ class CheckoutController extends Controller
     public function __construct(
         private CartService $cartService,
         private PaymentService $paymentService,
+        private DeliveryFeeService $deliveryFeeService,
     ) {}
 
     public function createSession(CheckoutRequest $request): JsonResponse
@@ -30,7 +32,7 @@ class CheckoutController extends Controller
             $cartItems = [[
                 'product_id' => $product->id,
                 'quantity' => $directBuy['quantity'],
-                'variant_id' => null,
+                'variant_id' => $directBuy['variant_id'] ?? null,
                 'product' => $product->toArray(),
             ]];
         } else {
@@ -59,14 +61,17 @@ class CheckoutController extends Controller
                 $subtotal += $item['product']['base_price'] * $item['quantity'];
             }
 
+            // Calculate delivery fee based on store-to-buyer distance
+            $shippingFee = $this->calculateShippingFee($cartItems, $validated['shipping_address']);
+
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
                 'user_id' => $user->id,
-                'status' => 'pending',
+                'status' => 'pending_confirmation',
                 'subtotal' => $subtotal,
-                'shipping_fee' => 0,
+                'shipping_fee' => $shippingFee,
                 'tax' => 0,
-                'total' => $subtotal,
+                'total' => $subtotal + $shippingFee,
                 'payment_method' => $validated['payment_method'] ?? 'cod',
                 'shipping_address' => $validated['shipping_address'],
                 'billing_address' => $validated['billing_address'] ?? $validated['shipping_address'],
@@ -103,31 +108,67 @@ class CheckoutController extends Controller
                 ]);
             }
 
+            // Add shipping fee as a line item for payment gateway
+            if ($shippingFee > 0) {
+                $lineItems[] = [
+                    'name' => 'Delivery Fee',
+                    'quantity' => 1,
+                    'amount' => (int) ($shippingFee * 100),
+                    'currency' => 'PHP',
+                    'description' => 'Distance-based delivery fee',
+                ];
+            }
+
             // Online payment (QR PH, card, gcash) — create PayMongo session
             $paymentMethods = match ($paymentMethod) {
                 'qrph' => ['qrph'],
                 default => ['card', 'gcash'],
             };
 
+            $cancelUrl = config('app.frontend_url') . '/checkout/cancel?order_id=' . $order->id;
+
             $session = $this->paymentService->createCheckoutSession(
                 $lineItems,
                 ['order_id' => $order->id, 'order_number' => $order->order_number],
-                $paymentMethods
+                $paymentMethods,
+                $cancelUrl
             );
 
             $order->update([
                 'paymongo_checkout_id' => $session['id'],
             ]);
 
-            // Clear cart for online payments too (stock decremented in webhook)
-            if (!$request->has('direct_buy')) {
-                $this->cartService->clearCart($user->id);
-            }
-
             return response()->json([
                 'checkout_url' => $session['attributes']['checkout_url'],
                 'order' => $order->load('items'),
             ]);
         });
+    }
+
+    private function calculateShippingFee(array $cartItems, array $shippingAddress): float
+    {
+        // Get the store from the first cart item's product
+        $firstProductId = $cartItems[0]['product_id'];
+        $product = Product::with('store')->find($firstProductId);
+        $store = $product?->store;
+
+        if (!$store || !$store->latitude || !$store->longitude) {
+            return $this->deliveryFeeService->getDefaultFee();
+        }
+
+        $buyerCoords = $this->deliveryFeeService->geocodeAddress($shippingAddress);
+
+        if (!$buyerCoords) {
+            return $this->deliveryFeeService->getDefaultFee();
+        }
+
+        $result = $this->deliveryFeeService->calculateFee(
+            $store->latitude,
+            $store->longitude,
+            $buyerCoords['lat'],
+            $buyerCoords['lng'],
+        );
+
+        return $result['delivery_fee'];
     }
 }

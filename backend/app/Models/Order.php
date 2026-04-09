@@ -15,6 +15,7 @@ class Order extends Model
         'tax', 'total', 'payment_method', 'payment_status',
         'paymongo_checkout_id', 'paymongo_payment_id',
         'shipping_address', 'billing_address', 'notes',
+        'cancellation_reason', 'cancellation_notes',
         'paid_at', 'confirmed_at', 'cancelled_at', 'shipped_at', 'delivered_at',
     ];
 

@@ -22,6 +22,8 @@ class StoreController extends Controller
             'banner' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'address' => ['nullable', 'string', 'max:500'],
             'phone' => ['nullable', 'string', 'max:20'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
 
         if ($request->user()->store) {
@@ -35,6 +37,8 @@ class StoreController extends Controller
             'description' => $request->description,
             'address' => $request->address,
             'phone' => $request->phone,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
         ];
 
         if ($request->hasFile('logo')) {
@@ -83,9 +87,11 @@ class StoreController extends Controller
             'banner' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'address' => ['nullable', 'string', 'max:500'],
             'phone' => ['nullable', 'string', 'max:20'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
 
-        $data = $request->only(['name', 'description', 'address', 'phone']);
+        $data = $request->only(['name', 'description', 'address', 'phone', 'latitude', 'longitude']);
 
         if ($request->has('name') && $request->name !== $store->name) {
             $data['slug'] = Str::slug($request->name) . '-' . Str::random(5);

@@ -23,7 +23,7 @@ class PaymentService
      * Line items are built from server-side cart data (Redis),
      * NOT from user-submitted prices. This prevents price manipulation.
      */
-    public function createCheckoutSession(array $lineItems, array $metadata = [], array $paymentMethods = ['card', 'gcash']): array
+    public function createCheckoutSession(array $lineItems, array $metadata = [], array $paymentMethods = ['card', 'gcash'], ?string $cancelUrl = null): array
     {
         $response = Http::withBasicAuth($this->secretKey, '')
             ->post("{$this->baseUrl}/checkout_sessions", [
@@ -36,7 +36,7 @@ class PaymentService
                         'show_line_items' => true,
                         'description' => 'SARI E-Commerce Order',
                         'success_url' => config('app.frontend_url') . '/checkout/success?session_id={id}',
-                        'cancel_url' => config('app.frontend_url') . '/checkout/cancel',
+                        'cancel_url' => $cancelUrl ?? config('app.frontend_url') . '/checkout/cancel',
                         'metadata' => $metadata,
                     ],
                 ],

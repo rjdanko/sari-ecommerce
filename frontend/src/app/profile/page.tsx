@@ -212,11 +212,14 @@ export default function ProfilePage() {
                       </label>
                       <input
                         type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9+]*"
                         value={personalForm.phone}
-                        onChange={(e) =>
-                          setPersonalForm((prev) => ({ ...prev, phone: e.target.value }))
-                        }
-                        placeholder="+63 912 345 6789"
+                        onChange={(e) => {
+                          const numericOnly = e.target.value.replace(/[^0-9+]/g, '');
+                          setPersonalForm((prev) => ({ ...prev, phone: numericOnly }));
+                        }}
+                        placeholder="09123456789"
                         className={inputClass}
                       />
                     </div>

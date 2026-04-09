@@ -13,6 +13,8 @@ interface StoreData {
   banner_url: string | null;
   address: string | null;
   phone: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export default function BusinessStorePage() {
@@ -26,6 +28,8 @@ export default function BusinessStorePage() {
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
   const [logo, setLogo] = useState<File | null>(null);
   const [banner, setBanner] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -41,6 +45,8 @@ export default function BusinessStorePage() {
         setDescription(s.description || '');
         setAddress(s.address || '');
         setPhone(s.phone || '');
+        setLatitude(s.latitude?.toString() || '');
+        setLongitude(s.longitude?.toString() || '');
         setLogoPreview(s.logo_url);
         setBannerPreview(s.banner_url);
       } catch {
@@ -75,6 +81,8 @@ export default function BusinessStorePage() {
     formData.append('description', description);
     formData.append('address', address);
     formData.append('phone', phone);
+    if (latitude) formData.append('latitude', latitude);
+    if (longitude) formData.append('longitude', longitude);
     if (logo) formData.append('logo', logo);
     if (banner) formData.append('banner', banner);
 
@@ -178,11 +186,44 @@ export default function BusinessStorePage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
                 <input
-                  type="text"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9+]*"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    const numericOnly = e.target.value.replace(/[^0-9+]/g, '');
+                    setPhone(numericOnly);
+                  }}
                   maxLength={20}
-                  placeholder="+63 912 345 6789"
+                  placeholder="09123456789"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-sari-400 focus:outline-none focus:ring-2 focus:ring-sari-100 transition-colors"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Latitude <span className="text-gray-400 font-normal">(for delivery fee)</span>
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={latitude}
+                  onChange={(e) => setLatitude(e.target.value)}
+                  placeholder="e.g. 14.5995"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-sari-400 focus:outline-none focus:ring-2 focus:ring-sari-100 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Longitude <span className="text-gray-400 font-normal">(for delivery fee)</span>
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={longitude}
+                  onChange={(e) => setLongitude(e.target.value)}
+                  placeholder="e.g. 120.9842"
                   className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-sari-400 focus:outline-none focus:ring-2 focus:ring-sari-100 transition-colors"
                 />
               </div>

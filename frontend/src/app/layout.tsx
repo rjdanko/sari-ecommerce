@@ -1,26 +1,25 @@
 import type { Metadata } from "next";
-import { Inter, DM_Serif_Display } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import Footer from "@/components/layout/Footer";
 import Providers from "@/components/Providers";
 import "./globals.css";
 
-const inter = Inter({
+const montserrat = Montserrat({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
-});
-
-const dmSerif = DM_Serif_Display({
-  weight: "400",
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-display",
+  variable: "--font-montserrat",
 });
 
 export const metadata: Metadata = {
   title: "SARI — Discover Your Perfect Style",
   description:
-    "Shop the latest fashion trends with AI-powered recommendations and smart comparison tools. GCash & Card payments accepted.",
+  "Shop the latest fashion trends with AI-powered recommendations and smart comparison tools. GCash & Card payments accepted.",
+  icons: {
+    icon: '/Sari_Logo_Icon.png',
+  },
 };
+
 
 export default function RootLayout({
   children,
@@ -28,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.className} ${dmSerif.variable}`}>
+    <html lang="en" className={`${montserrat.className} ${montserrat.variable}`}>
       <body className="flex flex-col min-h-screen">
         <Providers>
           <div className="flex-1">{children}</div>

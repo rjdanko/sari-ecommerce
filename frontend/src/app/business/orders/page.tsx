@@ -27,6 +27,8 @@ interface Order {
   created_at: string;
   user: OrderUser;
   items: OrderItem[];
+  cancellation_reason?: string | null;
+  cancellation_notes?: string | null;
 }
 
 const statusStyles: Record<string, string> = {
@@ -38,14 +40,25 @@ const statusStyles: Record<string, string> = {
   shipped: 'bg-sari-50 text-sari-700',
   delivered: 'bg-emerald-50 text-emerald-700',
   cancelled: 'bg-red-50 text-red-700',
+  payment_failed: 'bg-red-50 text-red-600',
 };
 
 const statusLabels: Record<string, string> = {
   pending_confirmation: 'Pending Confirmation',
   confirmed: 'Confirmed',
+  payment_failed: 'Payment Failed',
 };
 
-const statusOptions = ['all', 'pending_confirmation', 'confirmed', 'processing', 'paid', 'shipped', 'delivered', 'cancelled'];
+const statusOptions = ['all', 'pending_confirmation', 'confirmed', 'processing', 'paid', 'shipped', 'delivered', 'cancelled', 'payment_failed'];
+
+const reasonLabels: Record<string, string> = {
+  changed_mind: 'Changed my mind',
+  found_better_deal: 'Found a better deal',
+  ordered_by_mistake: 'Ordered by mistake',
+  delivery_too_long: 'Delivery takes too long',
+  want_to_change_order: 'Wants to change order',
+  other: 'Other',
+};
 
 function SkeletonRow() {
   return (
@@ -96,6 +109,7 @@ export default function BusinessOrdersPage() {
   };
 
   const handleConfirmOrder = async (orderId: number) => {
+    if (!window.confirm('Are you sure you want to confirm this order?')) return;
     try {
       await api.post(`/api/business/orders/${orderId}/confirm`);
       fetchOrders(search, statusFilter);
@@ -191,6 +205,12 @@ export default function BusinessOrdersPage() {
                       >
                         {statusLabels[order.status] || (order.status.charAt(0).toUpperCase() + order.status.slice(1))}
                       </span>
+                      {order.status === 'cancelled' && order.cancellation_reason && (
+                        <p className="mt-1 text-[11px] text-gray-400">
+                          {reasonLabels[order.cancellation_reason] ?? order.cancellation_reason}
+                          {order.cancellation_notes && `: ${order.cancellation_notes}`}
+                        </p>
+                      )}
                     </td>
                     <td className="px-5 py-4">
                       {order.status === 'pending_confirmation' && (

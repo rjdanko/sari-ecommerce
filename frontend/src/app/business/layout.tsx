@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
@@ -36,7 +37,7 @@ export default function BusinessLayout({
 
   const handleLogout = async () => {
     await logout();
-    router.push('/');
+    window.location.href = '/login';
   };
 
   const initials = user
@@ -80,9 +81,15 @@ export default function BusinessLayout({
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sari-400 to-sari-600 shadow-sm">
             <Store className="h-4 w-4 text-white" strokeWidth={2} />
           </div>
-          <div>
-            <span className="font-display text-lg tracking-tight text-gray-900">SARI</span>
-            <span className="ml-1.5 rounded-full bg-sari-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-sari-700">
+          <div className="flex items-center">
+            <Image
+              src="/Sari_text.png"
+              alt="SARI"
+              width={180}
+              height={60}
+              className="h-10 w-auto object-contain"
+            />
+            <span className="ml-2 rounded-full bg-sari-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-sari-700">
               My Store
             </span>
           </div>

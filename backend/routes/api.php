@@ -6,8 +6,10 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\DeliveryFeeController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\WebhookController;
@@ -25,6 +27,7 @@ Route::middleware('throttle:public-api')->group(function () {
     Route::get('/categories/{slug}', [CategoryController::class, 'show']);
     Route::get('/recommendations/popular', [RecommendationController::class, 'popular']);
     Route::get('/stores/{slug}', [App\Http\Controllers\StoreController::class, 'show']);
+    Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
 });
 
 // AUTH ROUTES — Strictest rate limit (5/min per IP)
@@ -63,11 +66,19 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
     Route::get('/wishlist', [WishlistController::class, 'index']);
     Route::post('/wishlist/{product}', [WishlistController::class, 'toggle']);
 
+    // Delivery fee estimation
+    Route::post('/delivery-fee/estimate', [DeliveryFeeController::class, 'estimate']);
+
+    // Reviews
+    Route::post('/products/{product}/reviews', [ReviewController::class, 'store']);
+    Route::delete('/products/{product}/reviews', [ReviewController::class, 'destroy']);
+
     // Checkout & Orders
     Route::post('/checkout', [CheckoutController::class, 'createSession']);
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancelOrder']);
+    Route::post('/orders/{order}/payment-failed', [OrderController::class, 'markPaymentFailed']);
 
     // Personalized recommendations
     Route::get('/recommendations/for-you', [RecommendationController::class, 'forUser']);
@@ -82,6 +93,7 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
         Route::put('/store', [App\Http\Controllers\StoreController::class, 'update']);
         Route::get('/store', [App\Http\Controllers\StoreController::class, 'myStore']);
         Route::get('/products', [ProductController::class, 'myProducts']);
+        Route::get('/products/{product}', [ProductController::class, 'showForBusiness']);
         Route::post('/products', [ProductController::class, 'store']);
         Route::put('/products/{product}', [ProductController::class, 'update']);
         Route::delete('/products/{product}', [ProductController::class, 'destroy']);

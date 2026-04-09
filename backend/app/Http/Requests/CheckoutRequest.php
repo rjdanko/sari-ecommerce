@@ -16,7 +16,7 @@ class CheckoutRequest extends FormRequest
         return [
             'shipping_address' => ['required', 'array'],
             'shipping_address.full_name' => ['nullable', 'string', 'max:255'],
-            'shipping_address.phone' => ['nullable', 'string', 'max:20'],
+            'shipping_address.phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s()]*$/'],
             'shipping_address.line1' => ['required', 'string', 'max:255'],
             'shipping_address.line2' => ['nullable', 'string', 'max:255'],
             'shipping_address.city' => ['required', 'string', 'max:100'],
@@ -34,6 +34,18 @@ class CheckoutRequest extends FormRequest
             'direct_buy' => ['sometimes', 'array'],
             'direct_buy.product_id' => ['required_with:direct_buy', 'integer', 'exists:products,id'],
             'direct_buy.quantity' => ['required_with:direct_buy', 'integer', 'min:1'],
+            'direct_buy.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('shipping_address.phone')) {
+            $address = $this->input('shipping_address');
+            if (isset($address['phone'])) {
+                $address['phone'] = preg_replace('/[^0-9+]/', '', $address['phone']);
+                $this->merge(['shipping_address' => $address]);
+            }
+        }
     }
 }

@@ -10,6 +10,9 @@ import api from '@/lib/api';
 import type { Product } from '@/types/product';
 import { useCartContext } from '@/contexts/CartContext';
 import { useToast } from '@/contexts/ToastContext';
+import StarRating from '@/components/reviews/StarRating';
+import ReviewForm from '@/components/reviews/ReviewForm';
+import { useAuth } from '@/hooks/useAuth';
 import {
   ChevronRight,
   Star,
@@ -23,14 +26,7 @@ import {
   CheckCircle2,
   Loader2,
 } from 'lucide-react';
-
-interface Review {
-  id: number;
-  user_name: string;
-  rating: number;
-  comment: string;
-  created_at: string;
-}
+import type { Review } from '@/types/product';
 
 interface ProductVariant {
   id: number;
@@ -43,7 +39,6 @@ interface ProductVariant {
 }
 
 interface ProductDetail extends Product {
-  reviews?: Review[];
   material?: string;
   style?: string;
   variants?: ProductVariant[];
@@ -56,20 +51,37 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSize, setSelectedSize] = useState('');
-  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
   const [wishlisted, setWishlisted] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [canReview, setCanReview] = useState(false);
+  const [userReview, setUserReview] = useState<any>(null);
   const { addItem } = useCartContext();
   const { addToast } = useToast();
+  const { user } = useAuth();
   const [addingToCart, setAddingToCart] = useState(false);
+
+  const fetchReviews = useCallback(async (productId: number) => {
+    try {
+      const { data } = await api.get(`/api/products/${productId}/reviews`);
+      setReviews(data.reviews?.data ?? []);
+      setCanReview(data.can_review ?? false);
+      setUserReview(data.user_review ?? null);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const fetchProduct = useCallback(async () => {
     try {
       const { data } = await api.get(`/api/products/${slug}`);
       const p = data.data ?? data;
       setProduct(p);
+
+      // Fetch reviews
+      fetchReviews(p.id);
 
       // Fetch related products from same category
       if (p.category?.slug) {
@@ -92,15 +104,14 @@ export default function ProductDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [slug]);
+  }, [slug, fetchReviews]);
 
   useEffect(() => {
     fetchProduct();
   }, [fetchProduct]);
 
-  // Deterministic rating from product id (same formula as ProductCard)
-  const rating = product ? ((product.id * 7 + 3) % 20 + 30) / 10 : 0;
-  const reviewCount = product ? (product.id * 13 + 5) % 90 + 5 : 0;
+  const rating = product?.average_rating ?? 0;
+  const reviewCount = product?.review_count ?? 0;
 
   // Extract unique option values from actual variant data
   const optionMap = new Map<string, string[]>();
@@ -115,14 +126,32 @@ export default function ProductDetailPage() {
       }
     }
   }
-  const sizes = optionMap.get('size') ?? [];
-  const colors = optionMap.get('color') ?? [];
+  const optionEntries = Array.from(optionMap.entries());
+  const hasVariants = optionEntries.length > 0;
+
+  // Resolve matching variant from selected options
+  const resolvedVariant = hasVariants && product?.variants
+    ? product.variants.find((v) => {
+        if (!v.options || !v.is_active) return false;
+        return optionEntries.every(
+          ([key]) => selectedOptions[key] && v.options[key] === selectedOptions[key],
+        );
+      })
+    : null;
+
+  const allOptionsSelected = !hasVariants || optionEntries.every(([key]) => !!selectedOptions[key]);
+  const [optionError, setOptionError] = useState('');
 
   const handleAddToCart = async () => {
     if (!product) return;
+    if (hasVariants && !allOptionsSelected) {
+      setOptionError('Please select all options before adding to cart.');
+      return;
+    }
+    setOptionError('');
     setAddingToCart(true);
     try {
-      await addItem(product.id, quantity);
+      await addItem(product.id, quantity, resolvedVariant?.id);
       addToast({
         type: 'success',
         title: 'Added to cart',
@@ -142,12 +171,20 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = () => {
     if (!product) return;
+    if (hasVariants && !allOptionsSelected) {
+      setOptionError('Please select all options before purchasing.');
+      return;
+    }
+    setOptionError('');
     const params = new URLSearchParams({
       direct: '1',
       product_id: product.id.toString(),
       slug: product.slug,
       quantity: quantity.toString(),
     });
+    if (resolvedVariant) {
+      params.set('variant_id', resolvedVariant.id.toString());
+    }
     window.location.href = `/checkout?${params.toString()}`;
   };
 
@@ -166,6 +203,7 @@ export default function ProductDetailPage() {
     : product?.primary_image
       ? [product.primary_image]
       : [];
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
 
   if (loading) {
     return (
@@ -217,11 +255,12 @@ export default function ProductDetailPage() {
             {/* Image Gallery */}
             <div className="animate-fade-in">
               <div className="relative aspect-[4/5] bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl overflow-hidden border border-gray-100">
-                {images.length > 0 ? (
+                {images.length > 0 && !failedImages.has(activeImage) ? (
                   <img
                     src={images[activeImage]?.url}
                     alt={images[activeImage]?.alt_text ?? product.name}
                     className="absolute inset-0 w-full h-full object-cover"
+                    onError={() => setFailedImages((prev) => new Set(prev).add(activeImage))}
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -249,9 +288,10 @@ export default function ProductDetailPage() {
                       )}
                     >
                       <img
-                        src={img.url}
+                        src={failedImages.has(i) ? '/placeholder-product.png' : img.url}
                         alt={img.alt_text ?? ''}
                         className="w-full h-full object-cover"
+                        onError={() => setFailedImages((prev) => new Set(prev).add(i))}
                       />
                     </button>
                   ))}
@@ -290,21 +330,11 @@ export default function ProductDetailPage() {
 
               {/* Rating */}
               <div className="flex items-center gap-2 mt-3">
-                <div className="flex items-center gap-0.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={cn(
-                        'w-4 h-4',
-                        star <= Math.round(rating)
-                          ? 'text-sari-400 fill-sari-400'
-                          : 'text-gray-200 fill-gray-200',
-                      )}
-                    />
-                  ))}
-                </div>
+                <StarRating rating={rating} size="md" />
                 <span className="text-sm text-gray-500">
-                  {rating.toFixed(1)} ({reviewCount} reviews)
+                  {reviewCount > 0
+                    ? `${rating.toFixed(1)} (${reviewCount} review${reviewCount !== 1 ? 's' : ''})`
+                    : 'No reviews yet'}
                 </span>
               </div>
 
@@ -344,51 +374,28 @@ export default function ProductDetailPage() {
               {/* Divider */}
               <div className="border-t border-gray-100 my-6" />
 
-              {/* Size Selector */}
-              {sizes.length > 0 && (
-                <div className="mb-5">
-                  <span className="block text-sm font-medium text-gray-700 mb-2.5">Size</span>
+              {/* Option Selectors (Size, Color, etc.) */}
+              {optionEntries.map(([optionKey, values]) => (
+                <div key={optionKey} className="mb-5">
+                  <span className="block text-sm font-medium text-gray-700 mb-2.5 capitalize">{optionKey}</span>
                   <div className="flex flex-wrap gap-2">
-                    {sizes.map((size) => (
+                    {values.map((value) => (
                       <button
-                        key={size}
-                        onClick={() => setSelectedSize(size)}
+                        key={value}
+                        onClick={() => setSelectedOptions((prev) => ({ ...prev, [optionKey]: value }))}
                         className={cn(
                           'px-4 py-2 rounded-full text-sm font-medium border-2 transition-all duration-200',
-                          selectedSize === size
+                          selectedOptions[optionKey] === value
                             ? 'border-sari-500 bg-sari-50 text-sari-800 shadow-sm'
                             : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50',
                         )}
                       >
-                        {size}
+                        {value}
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
-
-              {/* Color Selector */}
-              {colors.length > 0 && (
-                <div className="mb-5">
-                  <span className="block text-sm font-medium text-gray-700 mb-2.5">Color</span>
-                  <div className="flex flex-wrap gap-2">
-                    {colors.map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => setSelectedColor(color)}
-                        className={cn(
-                          'px-4 py-2 rounded-full text-sm font-medium border-2 transition-all duration-200',
-                          selectedColor === color
-                            ? 'border-sari-500 bg-sari-50 text-sari-800 shadow-sm'
-                            : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50',
-                        )}
-                      >
-                        {color}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              ))}
 
               {/* Quantity Picker */}
               <div className="mb-6">
@@ -416,6 +423,11 @@ export default function ProductDetailPage() {
                   </span>
                 </div>
               </div>
+
+              {/* Option validation message */}
+              {optionError && (
+                <p className="text-sm text-red-500 mb-3 animate-fade-in">{optionError}</p>
+              )}
 
               {/* Action Buttons */}
               <div className="flex items-center gap-3">
@@ -496,12 +508,38 @@ export default function ProductDetailPage() {
 
         {/* Customer Reviews */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 border-t border-gray-100">
-          <h2 className="font-display text-2xl text-gray-900 mb-6">
-            Customer Reviews
-          </h2>
-          {product.reviews && product.reviews.length > 0 ? (
-            <div className="space-y-5">
-              {product.reviews.map((review) => (
+          <div className="flex items-baseline justify-between mb-6">
+            <h2 className="font-display text-2xl text-gray-900">
+              Customer Reviews
+            </h2>
+            {reviewCount > 0 && (
+              <div className="flex items-center gap-2">
+                <StarRating rating={rating} size="sm" />
+                <span className="text-sm text-gray-500">
+                  {rating.toFixed(1)} ({reviewCount})
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Review Form */}
+          <div className="mb-8">
+            <ReviewForm
+              productId={product.id}
+              canReview={canReview}
+              userReview={userReview}
+              isLoggedIn={!!user}
+              onReviewSubmitted={() => {
+                fetchReviews(product.id);
+                fetchProduct();
+              }}
+            />
+          </div>
+
+          {/* Review List */}
+          {reviews.length > 0 ? (
+            <div className="space-y-4">
+              {reviews.map((review) => (
                 <div
                   key={review.id}
                   className="bg-white rounded-xl border border-gray-100 p-5"
@@ -515,19 +553,7 @@ export default function ProductDetailPage() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900">{review.user_name}</p>
-                        <div className="flex items-center gap-0.5 mt-0.5">
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <Star
-                              key={s}
-                              className={cn(
-                                'w-3 h-3',
-                                s <= review.rating
-                                  ? 'text-sari-400 fill-sari-400'
-                                  : 'text-gray-200 fill-gray-200',
-                              )}
-                            />
-                          ))}
-                        </div>
+                        <StarRating rating={review.rating} size="sm" />
                       </div>
                     </div>
                     <span className="text-xs text-gray-400">
@@ -538,7 +564,9 @@ export default function ProductDetailPage() {
                       })}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 leading-relaxed">{review.comment}</p>
+                  {review.comment && (
+                    <p className="text-sm text-gray-600 leading-relaxed mt-1">{review.comment}</p>
+                  )}
                 </div>
               ))}
             </div>

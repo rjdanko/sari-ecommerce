@@ -16,6 +16,7 @@ class Product extends Model
         'short_description', 'base_price', 'compare_at_price', 'sku',
         'stock_quantity', 'low_stock_threshold', 'status', 'brand',
         'attributes', 'weight', 'is_featured', 'view_count',
+        'average_rating', 'review_count',
     ];
 
     protected function casts(): array
@@ -25,6 +26,8 @@ class Product extends Model
             'compare_at_price' => 'decimal:2',
             'attributes' => 'array',
             'is_featured' => 'boolean',
+            'average_rating' => 'float',
+            'review_count' => 'integer',
         ];
     }
 
@@ -109,5 +112,10 @@ class Product extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
     }
 }

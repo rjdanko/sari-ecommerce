@@ -53,47 +53,50 @@ export default function HomePage() {
         </section>
 
         {/* Shop by Category */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="flex items-end justify-between mb-10">
-            <div>
-              <h2 className="font-display text-3xl md:text-4xl text-gray-900">
-                Shop by Category
-              </h2>
-              <p className="mt-2 text-gray-500">
-                Find exactly what you&apos;re looking for
-              </p>
-            </div>
-            <Link
-              href="/products"
-              className="hidden sm:inline-flex text-sm font-medium text-sari-600 hover:text-sari-700 transition-colors"
-            >
-              View all &rarr;
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {categories.map((cat, i) => (
+        <section className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-white" />
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div className="flex items-end justify-between mb-10">
+              <div>
+                <h2 className="font-display text-3xl md:text-4xl text-gray-900">
+                  Shop by Category
+                </h2>
+                <p className="mt-2 text-gray-500">
+                  Find exactly what you&apos;re looking for
+                </p>
+              </div>
               <Link
-                key={cat.slug}
-                href={`/categories/${cat.slug}`}
-                className={`group relative rounded-2xl overflow-hidden border border-gray-100 ${cat.hoverBorder} bg-gradient-to-br ${cat.accent} p-6 flex flex-col justify-between aspect-[3/4] transition-all duration-300 hover:shadow-lg hover:shadow-gray-200/50 hover:-translate-y-1`}
-                style={{ animationDelay: `${i * 100}ms` }}
+                href="/products"
+                className="hidden sm:inline-flex text-sm font-medium text-sari-600 hover:text-sari-700 transition-colors"
               >
-                {/* Decorative circle */}
-                <div className={`w-12 h-12 rounded-xl ${cat.iconBg} flex items-center justify-center transition-transform duration-300 group-hover:scale-110`}>
-                  <span className={`text-lg font-bold ${cat.textColor}`}>
-                    {cat.name.charAt(0)}
-                  </span>
-                </div>
-                <div>
-                  <h3 className={`font-semibold text-lg tracking-tight ${cat.textColor}`}>
-                    {cat.name}
-                  </h3>
-                  <span className={`inline-flex items-center mt-1 ${cat.subtextColor} text-xs font-medium opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300`}>
-                    Explore &rarr;
-                  </span>
-                </div>
+                View all &rarr;
               </Link>
-            ))}
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {categories.map((cat, i) => (
+                <Link
+                  key={cat.slug}
+                  href={`/categories/${cat.slug}`}
+                  className={`group relative rounded-2xl overflow-hidden border border-gray-100 ${cat.hoverBorder} bg-gradient-to-br ${cat.accent} p-6 flex flex-col justify-between aspect-[3/4] transition-all duration-300 hover:shadow-lg hover:shadow-gray-200/50 hover:-translate-y-1`}
+                  style={{ animationDelay: `${i * 100}ms` }}
+                >
+                  {/* Decorative circle */}
+                  <div className={`w-12 h-12 rounded-xl ${cat.iconBg} flex items-center justify-center transition-transform duration-300 group-hover:scale-110`}>
+                    <span className={`text-lg font-bold ${cat.textColor}`}>
+                      {cat.name.charAt(0)}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className={`font-semibold text-lg tracking-tight ${cat.textColor}`}>
+                      {cat.name}
+                    </h3>
+                    <span className={`inline-flex items-center mt-1 ${cat.subtextColor} text-xs font-medium opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300`}>
+                      Explore &rarr;
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
 

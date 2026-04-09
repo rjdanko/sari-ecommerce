@@ -2,6 +2,11 @@ export interface CartItem {
   product_id: number;
   quantity: number;
   variant_id: number | null;
+  variant?: {
+    id: number;
+    options: Record<string, string>;
+    price_modifier?: number;
+  };
   product: {
     id: number;
     name: string;

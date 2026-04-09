@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Search, Plus, Pencil, Trash2, Package } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Search, Plus, Pencil, Trash2, Package, AlertTriangle, Loader2, X } from 'lucide-react';
 import api from '@/lib/api';
 import { cn, formatPrice } from '@/lib/utils';
+import { useToast } from '@/contexts/ToastContext';
 import type { Product } from '@/types/product';
 
 const statusStyles: Record<Product['status'], string> = {
@@ -41,10 +43,14 @@ function SkeletonRow() {
 }
 
 export default function BusinessProductsPage() {
+  const router = useRouter();
+  const { addToast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchProducts = useCallback(async (query = '') => {
     setLoading(true);
@@ -72,13 +78,23 @@ export default function BusinessProductsPage() {
     }, 300);
   };
 
-  const handleDelete = async (product: Product) => {
-    if (!window.confirm(`Delete "${product.name}"? This action cannot be undone.`)) return;
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const productName = deleteTarget.name;
+    setDeleting(true);
     try {
-      await api.delete(`/api/business/products/${product.id}`);
+      await api.delete(`/api/business/products/${deleteTarget.id}`);
+      addToast({ type: 'success', title: 'Product deleted', message: productName });
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        title: 'Failed to delete product',
+        message: err.response?.data?.message || 'Please try again.',
+      });
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
       fetchProducts(search);
-    } catch {
-      // silently fail
     }
   };
 
@@ -171,11 +187,15 @@ export default function BusinessProductsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-1">
-                        <button className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-sari-50 hover:text-sari-600" title="Edit product">
+                        <button
+                          onClick={() => router.push(`/business/products/${product.id}/edit`)}
+                          className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-sari-50 hover:text-sari-600"
+                          title="Edit product"
+                        >
                           <Pencil className="h-4 w-4" strokeWidth={1.8} />
                         </button>
                         <button
-                          onClick={() => handleDelete(product)}
+                          onClick={() => setDeleteTarget(product)}
                           className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                           title="Delete product"
                         >
@@ -213,6 +233,60 @@ export default function BusinessProductsPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-sm mx-4 rounded-2xl bg-white p-6 shadow-xl border border-gray-100 animate-slide-up">
+            <button
+              onClick={() => setDeleteTarget(null)}
+              className="absolute right-4 top-4 rounded-lg p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
+                <AlertTriangle className="h-6 w-6 text-red-500" />
+              </div>
+              <h3 className="font-display text-lg text-gray-900 mb-1">Delete Product</h3>
+              <p className="text-sm text-gray-500 mb-1">
+                Are you sure you want to delete
+              </p>
+              <p className="text-sm font-semibold text-gray-700 mb-4">
+                &ldquo;{deleteTarget.name}&rdquo;?
+              </p>
+              <p className="text-xs text-gray-400 mb-6">
+                This action cannot be undone. The product will be permanently removed.
+              </p>
+
+              <div className="flex w-full gap-3">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={deleting}
+                  className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

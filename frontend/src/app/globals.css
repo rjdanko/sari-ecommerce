@@ -8,8 +8,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-sans: 'Montserrat', system-ui, sans-serif;
+  --font-display: 'Montserrat', system-ui, sans-serif;
 
   /* SARI brand colors */
   --color-sari-50: #FFFBEB;

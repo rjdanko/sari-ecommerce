@@ -12,6 +12,8 @@ export interface Order {
   items: OrderItem[];
   created_at: string;
   paid_at: string | null;
+  cancellation_reason: string | null;
+  cancellation_notes: string | null;
 }
 
 export interface OrderItem {

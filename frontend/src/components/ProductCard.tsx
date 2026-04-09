@@ -27,9 +27,9 @@ export default function ProductCard({
   const hasRealImage = !!product.primary_image?.url;
   const imageUrl = product.primary_image?.url ?? '/placeholder-product.png';
   const [imageLoaded, setImageLoaded] = useState(!hasRealImage);
-  // Deterministic placeholder rating derived from product id
-  const rating = ((product.id * 7 + 3) % 20 + 30) / 10; // 3.0–4.9
-  const reviewCount = (product.id * 13 + 5) % 90 + 5; // 5–94
+  const [imageFailed, setImageFailed] = useState(false);
+  const rating = product.average_rating ?? 0;
+  const reviewCount = product.review_count ?? 0;
 
   const discount =
     product.compare_at_price && product.compare_at_price > product.base_price
@@ -46,13 +46,14 @@ export default function ProductCard({
       <div className="relative aspect-[4/5] bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
         {/* Product image */}
         <img
-          src={imageUrl}
+          src={imageFailed ? '/placeholder-product.png' : imageUrl}
           alt={product.primary_image?.alt_text ?? product.name}
           className={cn(
             'absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover:scale-105',
-            imageLoaded ? 'opacity-100' : 'opacity-0',
+            imageLoaded || imageFailed ? 'opacity-100' : 'opacity-0',
           )}
           onLoad={() => setImageLoaded(true)}
+          onError={() => setImageFailed(true)}
         />
 
         {/* Subtle gradient overlay on hover for contrast */}
@@ -153,7 +154,9 @@ export default function ProductCard({
               />
             ))}
           </div>
-          <span className="text-xs text-gray-400">({reviewCount})</span>
+          <span className="text-xs text-gray-400">
+            {reviewCount > 0 ? `(${reviewCount})` : 'No reviews'}
+          </span>
         </div>
 
         {/* Price + Cart button */}

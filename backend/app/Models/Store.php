@@ -11,13 +11,15 @@ class Store extends Model
 
     protected $fillable = [
         'user_id', 'name', 'slug', 'description', 'logo_url', 'banner_url',
-        'address', 'phone', 'is_active',
+        'address', 'phone', 'latitude', 'longitude', 'is_active',
     ];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'latitude' => 'float',
+            'longitude' => 'float',
         ];
     }
 

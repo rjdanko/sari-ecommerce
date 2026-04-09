@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Services\RecommendationService;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +24,7 @@ class RecommendationController extends Controller
             ->with('primaryImage', 'category')
             ->get();
 
-        return response()->json(['data' => $products]);
+        return response()->json(['data' => ProductResource::collection($products)]);
     }
 
     /**
@@ -46,7 +47,7 @@ class RecommendationController extends Controller
             ->with('primaryImage', 'category')
             ->get();
 
-        return response()->json(['data' => $products]);
+        return response()->json(['data' => ProductResource::collection($products)]);
     }
 
     /**
@@ -65,17 +66,17 @@ class RecommendationController extends Controller
                 ->where('id', '!=', $product->id)
                 ->where('status', 'active')
                 ->limit(8)
-                ->with('primaryImage')
+                ->with('primaryImage', 'category')
                 ->get();
 
-            return response()->json(['data' => $products]);
+            return response()->json(['data' => ProductResource::collection($products)]);
         }
 
         $productIds = collect($recommendations)->pluck('id')->toArray();
         $products = Product::whereIn('id', $productIds)
-            ->with('primaryImage')
+            ->with('primaryImage', 'category')
             ->get();
 
-        return response()->json(['data' => $products]);
+        return response()->json(['data' => ProductResource::collection($products)]);
     }
 }
