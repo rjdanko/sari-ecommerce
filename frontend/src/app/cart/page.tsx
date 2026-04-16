@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import { useCartContext } from '@/contexts/CartContext';
 import { useToast } from '@/contexts/ToastContext';
 import { formatPrice } from '@/lib/utils';
+import api from '@/lib/api';
 import {
   ShoppingBag,
   Minus,
@@ -36,14 +37,105 @@ function CartSkeleton() {
   );
 }
 
+function VariantSelector({
+  currentVariant,
+  variants,
+  onVariantChange,
+}: {
+  currentVariant: { id: number; options: Record<string, string> };
+  variants: Array<{ id: number; options: Record<string, string>; is_active: boolean }>;
+  onVariantChange: (variantId: number) => void;
+}) {
+  const [selected, setSelected] = useState<Record<string, string>>(currentVariant.options);
+  const [updating, setUpdating] = useState(false);
+
+  const optionKeys = Array.from(
+    new Set(variants.flatMap((v) => Object.keys(v.options)))
+  );
+
+  const handleChange = async (key: string, value: string) => {
+    const newSelected = { ...selected, [key]: value };
+    setSelected(newSelected);
+
+    const match = variants.find((v) =>
+      optionKeys.every((k) => v.options[k] === newSelected[k])
+    );
+
+    if (match && match.id !== currentVariant.id) {
+      setUpdating(true);
+      onVariantChange(match.id);
+    }
+  };
+
+  // Reset updating when currentVariant changes (cart refreshed)
+  useEffect(() => {
+    setUpdating(false);
+    setSelected(currentVariant.options);
+  }, [currentVariant.id, currentVariant.options]);
+
+  return (
+    <div className="flex flex-wrap gap-2 mt-1.5">
+      {optionKeys.map((key) => {
+        const uniqueValues = Array.from(new Set(variants.map((v) => v.options[key]).filter(Boolean)));
+        return (
+          <label key={key} className="flex items-center gap-1.5 text-[11px]">
+            <span className="font-medium text-gray-500">{key}:</span>
+            <select
+              value={selected[key] || ''}
+              onChange={(e) => handleChange(key, e.target.value)}
+              disabled={updating}
+              className="text-[11px] font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-md px-1.5 py-0.5 focus:ring-1 focus:ring-sari-500/30 focus:border-sari-400 outline-none transition-all disabled:opacity-50"
+            >
+              {uniqueValues.map((val) => (
+                <option key={val} value={val}>{val}</option>
+              ))}
+            </select>
+          </label>
+        );
+      })}
+      {updating && <Loader2 className="w-3 h-3 animate-spin text-sari-500" />}
+    </div>
+  );
+}
+
 export default function CartPage() {
-  const { cart, loading, fetchCart, updateQuantity, removeItem } =
+  const { cart, loading, fetchCart, updateQuantity, updateVariant, removeItem } =
     useCartContext();
   const { addToast } = useToast();
+  const [productVariants, setProductVariants] = useState<Record<number, any[]>>({});
 
   useEffect(() => {
     fetchCart();
   }, [fetchCart]);
+
+  // Fetch variants for products in cart that have a variant selected
+  useEffect(() => {
+    cart.items.forEach(async (item) => {
+      if (item.variant_id && !productVariants[item.product_id]) {
+        try {
+          const { data } = await api.get(`/api/products/${item.product.slug}`);
+          const product = data.data ?? data;
+          if (product.variants?.length > 0) {
+            setProductVariants((prev) => ({
+              ...prev,
+              [item.product_id]: product.variants.filter((v: any) => v.is_active),
+            }));
+          }
+        } catch {
+          // ignore
+        }
+      }
+    });
+  }, [cart.items]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleVariantChange = async (productId: number, variantId: number) => {
+    try {
+      await updateVariant(productId, variantId);
+      addToast({ type: 'success', title: 'Variant updated' });
+    } catch {
+      addToast({ type: 'error', title: 'Failed to update variant' });
+    }
+  };
 
   const handleQuantityChange = async (
     productId: number,
@@ -156,6 +248,13 @@ export default function CartPage() {
                           src={item.product.image_url}
                           alt={item.product.name}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            if (!target.dataset.fallback) {
+                              target.dataset.fallback = '1';
+                              target.src = '/placeholder-product.svg';
+                            }
+                          }}
                         />
                       ) : (
                         <Package
@@ -174,7 +273,13 @@ export default function CartPage() {
                         {item.product.name}
                       </Link>
 
-                      {item.variant?.options && Object.keys(item.variant.options).length > 0 && (
+                      {item.variant && productVariants[item.product_id] ? (
+                        <VariantSelector
+                          currentVariant={item.variant}
+                          variants={productVariants[item.product_id]}
+                          onVariantChange={(variantId) => handleVariantChange(item.product_id, variantId)}
+                        />
+                      ) : item.variant?.options && Object.keys(item.variant.options).length > 0 ? (
                         <div className="flex flex-wrap gap-1.5 mt-1">
                           {Object.entries(item.variant.options).map(([key, value]) => (
                             <span
@@ -185,7 +290,7 @@ export default function CartPage() {
                             </span>
                           ))}
                         </div>
-                      )}
+                      ) : null}
 
                       <p className="text-sm text-gray-500 mt-0.5">
                         {formatPrice(item.product.base_price)} each

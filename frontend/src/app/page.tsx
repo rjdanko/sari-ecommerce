@@ -1,12 +1,14 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
 import HomeRecommendations from '@/components/HomeRecommendations';
+import VoucherBanner from '@/components/VoucherBanner';
 
 const categories = [
-  { name: 'T-Shirts', slug: 't-shirts', accent: 'from-sari-100 to-sari-50', iconBg: 'bg-sari-200/60', textColor: 'text-sari-800', subtextColor: 'text-sari-600/70', hoverBorder: 'hover:border-sari-300', ringColor: 'ring-sari-200' },
-  { name: 'Jeans', slug: 'jeans', accent: 'from-blue-100 to-blue-50', iconBg: 'bg-blue-200/60', textColor: 'text-blue-800', subtextColor: 'text-blue-600/70', hoverBorder: 'hover:border-blue-300', ringColor: 'ring-blue-200' },
-  { name: 'Dresses', slug: 'dresses', accent: 'from-rose-100 to-rose-50', iconBg: 'bg-rose-200/60', textColor: 'text-rose-800', subtextColor: 'text-rose-600/70', hoverBorder: 'hover:border-rose-300', ringColor: 'ring-rose-200' },
-  { name: 'Jackets', slug: 'jackets', accent: 'from-stone-100 to-stone-50', iconBg: 'bg-stone-200/60', textColor: 'text-stone-800', subtextColor: 'text-stone-600/70', hoverBorder: 'hover:border-stone-300', ringColor: 'ring-stone-200' },
+  { name: 'T-Shirts', slug: 't-shirts', image: '/images/shirts-sari.jpg', accent: 'from-sari-100 to-sari-50', iconBg: 'bg-sari-200/60', textColor: 'text-sari-800', subtextColor: 'text-sari-600/70', hoverBorder: 'hover:border-sari-300', ringColor: 'ring-sari-200' },
+  { name: 'Jeans', slug: 'jeans', image: '/images/jeans-sari.webp', accent: 'from-blue-100 to-blue-50', iconBg: 'bg-blue-200/60', textColor: 'text-blue-800', subtextColor: 'text-blue-600/70', hoverBorder: 'hover:border-blue-300', ringColor: 'ring-blue-200' },
+  { name: 'Dresses', slug: 'dresses', image: '/images/dress-sari.jpg', accent: 'from-rose-100 to-rose-50', iconBg: 'bg-rose-200/60', textColor: 'text-rose-800', subtextColor: 'text-rose-600/70', hoverBorder: 'hover:border-rose-300', ringColor: 'ring-rose-200' },
+  { name: 'Jackets', slug: 'jackets', image: '/images/jacket-sari.jpg', accent: 'from-stone-100 to-stone-50', iconBg: 'bg-stone-200/60', textColor: 'text-stone-800', subtextColor: 'text-stone-600/70', hoverBorder: 'hover:border-stone-300', ringColor: 'ring-stone-200' },
 ];
 
 export default function HomePage() {
@@ -52,6 +54,9 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Voucher Banner */}
+        <VoucherBanner />
+
         {/* Shop by Category */}
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-white" />
@@ -77,22 +82,28 @@ export default function HomePage() {
                 <Link
                   key={cat.slug}
                   href={`/categories/${cat.slug}`}
-                  className={`group relative rounded-2xl overflow-hidden border border-gray-100 ${cat.hoverBorder} bg-gradient-to-br ${cat.accent} p-6 flex flex-col justify-between aspect-[3/4] transition-all duration-300 hover:shadow-lg hover:shadow-gray-200/50 hover:-translate-y-1`}
+                  className={`group relative rounded-2xl overflow-hidden border border-gray-200 shadow-sm flex flex-col justify-between aspect-[3/4] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-gray-300`}
                   style={{ animationDelay: `${i * 100}ms` }}
                 >
-                  {/* Decorative circle */}
-                  <div className={`w-12 h-12 rounded-xl ${cat.iconBg} flex items-center justify-center transition-transform duration-300 group-hover:scale-110`}>
-                    <span className={`text-lg font-bold ${cat.textColor}`}>
-                      {cat.name.charAt(0)}
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className={`font-semibold text-lg tracking-tight ${cat.textColor}`}>
-                      {cat.name}
-                    </h3>
-                    <span className={`inline-flex items-center mt-1 ${cat.subtextColor} text-xs font-medium opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300`}>
-                      Explore &rarr;
-                    </span>
+                  <Image src={cat.image} alt={cat.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110 z-0" sizes="(max-width: 768px) 50vw, 25vw" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/20 to-transparent z-10 transition-opacity duration-300 group-hover:opacity-90" />
+                  
+                  <div className="relative z-20 p-6 flex flex-col h-full justify-between">
+                    {/* Top Section */}
+                    <div className="flex justify-end">
+                      <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 border border-white/30">
+                        <span className="text-white text-sm font-medium">&rarr;</span>
+                      </div>
+                    </div>
+                    {/* Bottom Section */}
+                    <div className="transform transition-transform duration-300 group-hover:-translate-y-1">
+                      <h3 className="font-display font-semibold text-2xl tracking-tight text-white drop-shadow-md">
+                        {cat.name}
+                      </h3>
+                      <span className="inline-flex items-center mt-2 text-white/90 text-sm font-medium opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                        Explore Collection
+                      </span>
+                    </div>
                   </div>
                 </Link>
               ))}

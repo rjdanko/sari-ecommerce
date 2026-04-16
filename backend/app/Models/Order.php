@@ -12,7 +12,7 @@ class Order extends Model
 
     protected $fillable = [
         'order_number', 'user_id', 'status', 'subtotal', 'shipping_fee',
-        'tax', 'total', 'payment_method', 'payment_status',
+        'tax', 'discount', 'total', 'voucher_id', 'payment_method', 'payment_status',
         'paymongo_checkout_id', 'paymongo_payment_id',
         'shipping_address', 'billing_address', 'notes',
         'cancellation_reason', 'cancellation_notes',

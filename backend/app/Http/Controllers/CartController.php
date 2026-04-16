@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCartItemRequest;
 use App\Http\Requests\UpdateCartItemRequest;
+use App\Http\Requests\UpdateCartVariantRequest;
 use App\Services\CartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -65,6 +66,23 @@ class CartController extends Controller
     {
         $cart = $this->cartService->removeItem($request->user()->id, $productId);
         return response()->json(['items' => $cart]);
+    }
+
+    public function updateVariant(UpdateCartVariantRequest $request, int $productId): JsonResponse
+    {
+        $validated = $request->validated();
+
+        try {
+            $cart = $this->cartService->updateVariant(
+                $request->user()->id,
+                $productId,
+                $validated['variant_id'],
+            );
+
+            return response()->json(['items' => $cart]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
     }
 
     public function clear(Request $request): JsonResponse

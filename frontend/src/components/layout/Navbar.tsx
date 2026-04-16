@@ -2,22 +2,37 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useCartContext } from '@/contexts/CartContext';
 import { Heart, ShoppingCart, Search, Menu, X } from 'lucide-react';
 
 export default function Navbar() {
+  return (
+    <Suspense>
+      <NavbarInner />
+    </Suspense>
+  );
+}
+
+function NavbarInner() {
   const { user, loading, logout, hasRole } = useAuth();
   const { cart } = useCartContext();
   const itemCount = cart.item_count || cart.items.length;
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+
+  useEffect(() => {
+    setSearchQuery(searchParams.get('q') || '');
+  }, [searchParams]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/products?q=${encodeURIComponent(searchQuery)}`;
+      router.push(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 

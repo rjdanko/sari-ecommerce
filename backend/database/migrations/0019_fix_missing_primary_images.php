@@ -11,7 +11,7 @@ return new class extends Migration {
         $productsWithoutPrimary = DB::table('product_images')
             ->select('product_id')
             ->groupBy('product_id')
-            ->havingRaw('SUM(is_primary) = 0')
+            ->havingRaw('SUM(is_primary::int) = 0')
             ->pluck('product_id');
 
         foreach ($productsWithoutPrimary as $productId) {

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Store,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,8 +33,22 @@ export default function BusinessLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <Loader2 className="h-8 w-8 animate-spin text-sari-500" />
+      </div>
+    );
+  }
 
   const handleLogout = async () => {
     await logout();

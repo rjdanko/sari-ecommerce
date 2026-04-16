@@ -23,44 +23,65 @@ class CartService
             return [];
         }
 
-        $items = [];
+        // Decode all cart data first
+        $decoded = [];
+        $productIds = [];
+        $variantIds = [];
         foreach ($cartData as $productId => $data) {
-            $decoded = json_decode($data, true);
-            $product = Product::with('primaryImage')->find($productId);
-            if ($product) {
-                $variantId = $decoded['variant_id'] ?? null;
-                $variantData = null;
+            $decoded[$productId] = json_decode($data, true);
+            $productIds[] = (int) $productId;
+            if (!empty($decoded[$productId]['variant_id'])) {
+                $variantIds[] = (int) $decoded[$productId]['variant_id'];
+            }
+        }
 
-                if ($variantId) {
-                    $variant = ProductVariant::find($variantId);
-                    if ($variant) {
-                        $variantData = [
-                            'id' => $variant->id,
-                            'options' => $variant->options ?? [],
-                            'price_modifier' => $variant->price ? (float) $variant->price - (float) $product->base_price : null,
-                        ];
-                    }
-                }
+        // Batch-load all products and variants in 2 queries instead of N+N
+        $products = Product::with('primaryImage')
+            ->whereIn('id', $productIds)
+            ->get()
+            ->keyBy('id');
 
-                $items[] = [
-                    'product_id' => (int) $productId,
-                    'quantity' => $decoded['quantity'],
-                    'variant_id' => $variantId,
-                    'variant' => $variantData,
-                    'product' => [
-                        'id' => $product->id,
-                        'name' => $product->name,
-                        'slug' => $product->slug,
-                        'base_price' => $product->base_price,
-                        'image_url' => $product->primaryImage?->url
-                            ? (str_starts_with($product->primaryImage->url, 'http')
-                                ? $product->primaryImage->url
-                                : asset('storage/' . $product->primaryImage->url))
-                            : null,
-                        'stock_quantity' => $product->stock_quantity,
-                    ],
+        $variants = !empty($variantIds)
+            ? ProductVariant::whereIn('id', $variantIds)->get()->keyBy('id')
+            : collect();
+
+        $items = [];
+        foreach ($decoded as $productId => $data) {
+            $product = $products->get((int) $productId);
+            if (!$product) {
+                continue;
+            }
+
+            $variantId = $data['variant_id'] ?? null;
+            $variantData = null;
+
+            if ($variantId && $variants->has($variantId)) {
+                $variant = $variants->get($variantId);
+                $variantData = [
+                    'id' => $variant->id,
+                    'options' => $variant->options ?? [],
+                    'price_modifier' => $variant->price ? (float) $variant->price - (float) $product->base_price : null,
                 ];
             }
+
+            $items[] = [
+                'product_id' => (int) $productId,
+                'quantity' => $data['quantity'],
+                'variant_id' => $variantId,
+                'variant' => $variantData,
+                'product' => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'base_price' => $product->base_price,
+                    'image_url' => $product->primaryImage?->url
+                        ? (str_starts_with($product->primaryImage->url, 'http')
+                            ? $product->primaryImage->url
+                            : asset('storage/' . $product->primaryImage->url))
+                        : null,
+                    'stock_quantity' => $product->stock_quantity,
+                ],
+            ];
         }
 
         return $items;
@@ -121,6 +142,32 @@ class CartService
             }
         }
 
+        Redis::expire($key, self::CART_TTL);
+
+        return $this->getCart($userId);
+    }
+
+    public function updateVariant(int $userId, int $productId, int $variantId): array
+    {
+        $key = $this->cartKey($userId);
+        $existing = Redis::hget($key, $productId);
+
+        if (!$existing) {
+            throw new \InvalidArgumentException('Product not found in cart.');
+        }
+
+        $variant = ProductVariant::where('id', $variantId)
+            ->where('product_id', $productId)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$variant) {
+            throw new \InvalidArgumentException('Invalid variant for this product.');
+        }
+
+        $decoded = json_decode($existing, true);
+        $decoded['variant_id'] = $variantId;
+        Redis::hset($key, $productId, json_encode($decoded));
         Redis::expire($key, self::CART_TTL);
 
         return $this->getCart($userId);

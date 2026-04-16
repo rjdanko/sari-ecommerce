@@ -28,6 +28,8 @@ Route::middleware('throttle:public-api')->group(function () {
     Route::get('/recommendations/popular', [RecommendationController::class, 'popular']);
     Route::get('/stores/{slug}', [App\Http\Controllers\StoreController::class, 'show']);
     Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
+    Route::get('/vouchers/available', [App\Http\Controllers\VoucherController::class, 'index']);
+    Route::get('/images/{imageId}', [App\Http\Controllers\ImageProxyController::class, 'show']);
 });
 
 // AUTH ROUTES — Strictest rate limit (5/min per IP)
@@ -60,7 +62,14 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
     Route::post('/cart', [CartController::class, 'store']);
     Route::put('/cart/{productId}', [CartController::class, 'update']);
     Route::delete('/cart/{productId}', [CartController::class, 'destroy']);
+    Route::put('/cart/{productId}/variant', [CartController::class, 'updateVariant']);
     Route::delete('/cart', [CartController::class, 'clear']);
+
+    // Vouchers
+    Route::get('/vouchers', [App\Http\Controllers\VoucherController::class, 'index']);
+    Route::post('/vouchers/claim', [App\Http\Controllers\VoucherController::class, 'claim']);
+    Route::get('/vouchers/my-claimed', [App\Http\Controllers\VoucherController::class, 'myClaimed']);
+    Route::post('/vouchers/apply', [App\Http\Controllers\VoucherController::class, 'apply']);
 
     // Wishlist
     Route::get('/wishlist', [WishlistController::class, 'index']);

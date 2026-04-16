@@ -47,6 +47,9 @@ function ProductsPageContent() {
       };
       if (activeCategory !== 'all') params.category = activeCategory;
 
+      const q = searchParams.get('q');
+      if (q) params.search = q;
+
       const res = await api.get('/api/products', { params });
       const data = res.data;
       const newProducts: Product[] = data.data ?? [];
@@ -65,7 +68,7 @@ function ProductsPageContent() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [activeCategory, sortBy]);
+  }, [activeCategory, sortBy, searchParams]);
 
   // Re-fetch when filters change
   useEffect(() => {
@@ -112,7 +115,7 @@ function ProductsPageContent() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
+      <main className="min-h-screen bg-white">
         {/* Page header */}
         <div className="relative overflow-hidden bg-gradient-to-r from-sari-50 via-white to-sari-50 border-b border-gray-100">
           <div
@@ -125,11 +128,14 @@ function ProductsPageContent() {
           />
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
             <h1 className="font-display text-3xl md:text-4xl text-gray-900 tracking-tight">
-              All Products
+              {searchParams.get('q')
+                ? <>Search: &ldquo;{searchParams.get('q')}&rdquo;</>
+                : 'All Products'}
             </h1>
             <p className="mt-2 text-gray-500 text-sm md:text-base max-w-lg">
-              Browse our curated collection of fashion essentials, from everyday
-              basics to statement pieces.
+              {searchParams.get('q')
+                ? 'Showing results matching your search.'
+                : 'Browse our curated collection of fashion essentials, from everyday basics to statement pieces.'}
             </p>
           </div>
         </div>
@@ -145,9 +151,23 @@ function ProductsPageContent() {
               <SlidersHorizontal className="w-4 h-4" />
               Filters
             </button>
-            <span className="text-sm text-gray-400">
-              {filtered.length} product{filtered.length !== 1 ? 's' : ''}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-400">
+                {filtered.length} product{filtered.length !== 1 ? 's' : ''}
+              </span>
+              {searchParams.get('q') && (
+                <button
+                  onClick={() => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('q');
+                    window.location.href = url.toString();
+                  }}
+                  className="text-sm text-sari-600 hover:text-sari-700 font-medium transition-colors"
+                >
+                  Clear search &times;
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex gap-8">
@@ -167,13 +187,27 @@ function ProductsPageContent() {
             <div className="flex-1 min-w-0">
               {/* Desktop toolbar */}
               <div className="hidden lg:flex items-center justify-between mb-6">
-                <p className="text-sm text-gray-500">
-                  Showing{' '}
-                  <span className="font-medium text-gray-900">
-                    {filtered.length}
-                  </span>{' '}
-                  product{filtered.length !== 1 ? 's' : ''}
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-sm text-gray-500">
+                    Showing{' '}
+                    <span className="font-medium text-gray-900">
+                      {filtered.length}
+                    </span>{' '}
+                    product{filtered.length !== 1 ? 's' : ''}
+                  </p>
+                  {searchParams.get('q') && (
+                    <button
+                      onClick={() => {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('q');
+                        window.location.href = url.toString();
+                      }}
+                      className="text-sm text-sari-600 hover:text-sari-700 font-medium transition-colors"
+                    >
+                      Clear search &times;
+                    </button>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setGridCols(3)}

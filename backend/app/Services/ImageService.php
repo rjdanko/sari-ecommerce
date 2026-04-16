@@ -20,10 +20,25 @@ class ImageService
     public function upload(UploadedFile $file, string $directory = 'products'): string
     {
         // UUID filename prevents path traversal and filename collisions
-        $filename = $directory . '/' . Str::uuid() . '.' . $file->getClientOriginalExtension();
-        Storage::disk($this->disk)->put($filename, file_get_contents($file));
+        $uuid = Str::uuid();
+        $extension = $file->getClientOriginalExtension();
 
-        return Storage::disk($this->disk)->url($filename);
+        $result = Storage::disk($this->disk)->putFileAs(
+            $directory,
+            $file,
+            $uuid . '.' . $extension,
+            ['visibility' => 'public']
+        );
+
+        if ($result === false) {
+            throw new \RuntimeException('Failed to upload image to storage. Check Supabase S3 credentials and bucket configuration.');
+        }
+
+        // Construct the public URL explicitly using SUPABASE_PUBLIC_URL
+        // instead of relying on the S3 driver's url() which may produce
+        // an incorrect format for Supabase
+        $publicUrl = rtrim(config('filesystems.disks.supabase.url'), '/');
+        return $publicUrl . '/' . $directory . '/' . $uuid . '.' . $extension;
     }
 
     public function delete(string $path): bool

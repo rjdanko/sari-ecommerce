@@ -64,18 +64,56 @@ class CheckoutController extends Controller
             // Calculate delivery fee based on store-to-buyer distance
             $shippingFee = $this->calculateShippingFee($cartItems, $validated['shipping_address']);
 
+            // Apply voucher if provided
+            $discount = 0;
+            $voucherId = null;
+            $freeShipping = false;
+
+            if (!empty($validated['voucher_code'])) {
+                $voucher = \App\Models\Voucher::where('code', strtoupper(trim($validated['voucher_code'])))->first();
+
+                if ($voucher && $voucher->isValid()) {
+                    $claim = \App\Models\VoucherClaim::where('voucher_id', $voucher->id)
+                        ->where('user_id', $user->id)
+                        ->where('status', 'claimed')
+                        ->first();
+
+                    if ($claim && $subtotal >= $voucher->min_spend) {
+                        $discount = $voucher->calculateDiscount($subtotal);
+                        $freeShipping = $voucher->grantsFreeShipping();
+                        $voucherId = $voucher->id;
+
+                        // Mark claim as used (order_id set after order creation)
+                        $claim->update(['status' => 'used']);
+                    }
+                }
+            }
+
+            $effectiveShippingFee = $freeShipping ? 0 : $shippingFee;
+
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
                 'user_id' => $user->id,
                 'status' => 'pending_confirmation',
                 'subtotal' => $subtotal,
-                'shipping_fee' => $shippingFee,
+                'shipping_fee' => $effectiveShippingFee,
                 'tax' => 0,
-                'total' => $subtotal + $shippingFee,
+                'discount' => $discount,
+                'voucher_id' => $voucherId,
+                'total' => $subtotal + $effectiveShippingFee - $discount,
                 'payment_method' => $validated['payment_method'] ?? 'cod',
                 'shipping_address' => $validated['shipping_address'],
                 'billing_address' => $validated['billing_address'] ?? $validated['shipping_address'],
             ]);
+
+            // Link voucher claim to order
+            if ($voucherId) {
+                \App\Models\VoucherClaim::where('voucher_id', $voucherId)
+                    ->where('user_id', $user->id)
+                    ->where('status', 'used')
+                    ->whereNull('order_id')
+                    ->update(['order_id' => $order->id]);
+            }
 
             foreach ($cartItems as $item) {
                 $order->items()->create([
@@ -109,11 +147,11 @@ class CheckoutController extends Controller
             }
 
             // Add shipping fee as a line item for payment gateway
-            if ($shippingFee > 0) {
+            if ($effectiveShippingFee > 0) {
                 $lineItems[] = [
                     'name' => 'Delivery Fee',
                     'quantity' => 1,
-                    'amount' => (int) ($shippingFee * 100),
+                    'amount' => (int) ($effectiveShippingFee * 100),
                     'currency' => 'PHP',
                     'description' => 'Distance-based delivery fee',
                 ];
@@ -122,6 +160,7 @@ class CheckoutController extends Controller
             // Online payment (QR PH, card, gcash) — create PayMongo session
             $paymentMethods = match ($paymentMethod) {
                 'qrph' => ['qrph'],
+                'card' => ['card'],
                 default => ['card', 'gcash'],
             };
 

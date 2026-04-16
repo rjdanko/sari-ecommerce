@@ -11,6 +11,7 @@ interface CartContextType {
   fetchCart: () => Promise<void>;
   addItem: (productId: number, quantity?: number, variantId?: number) => Promise<void>;
   updateQuantity: (productId: number, quantity: number) => Promise<void>;
+  updateVariant: (productId: number, variantId: number) => Promise<void>;
   removeItem: (productId: number) => Promise<void>;
   clearCart: () => Promise<void>;
 }
@@ -43,32 +44,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [user, fetchCart]);
 
-  const addItem = async (productId: number, quantity: number = 1, variantId?: number) => {
+  const addItem = useCallback(async (productId: number, quantity: number = 1, variantId?: number) => {
     const { data } = await api.post('/api/cart', {
       product_id: productId,
       quantity,
       variant_id: variantId ?? null,
     });
     setCart(data);
-  };
+  }, []);
 
-  const updateQuantity = async (productId: number, quantity: number) => {
+  const updateQuantity = useCallback(async (productId: number, quantity: number) => {
     const { data } = await api.put(`/api/cart/${productId}`, { quantity });
     setCart(data);
-  };
+  }, []);
 
-  const removeItem = async (productId: number) => {
+  const updateVariant = useCallback(async (productId: number, variantId: number) => {
+    const { data } = await api.put(`/api/cart/${productId}/variant`, { variant_id: variantId });
+    setCart(data);
+  }, []);
+
+  const removeItem = useCallback(async (productId: number) => {
     const { data } = await api.delete(`/api/cart/${productId}`);
     setCart(data);
-  };
+  }, []);
 
-  const clearCart = async () => {
+  const clearCart = useCallback(async () => {
     await api.delete('/api/cart');
     setCart({ items: [], total: 0, item_count: 0 });
-  };
+  }, []);
 
   return (
-    <CartContext.Provider value={{ cart, loading, fetchCart, addItem, updateQuantity, removeItem, clearCart }}>
+    <CartContext.Provider value={{ cart, loading, fetchCart, addItem, updateQuantity, updateVariant, removeItem, clearCart }}>
       {children}
     </CartContext.Provider>
   );

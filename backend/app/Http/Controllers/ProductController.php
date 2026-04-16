@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Services\ImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
@@ -20,6 +21,25 @@ class ProductController extends Controller
      * Public listing — only active products.
      */
     public function index(Request $request): JsonResponse
+    {
+        // Search queries are not cached (too dynamic and low-repetition).
+        if ($request->filled('search')) {
+            return $this->buildProductListing($request)->response();
+        }
+
+        // Cache key includes a version counter (incremented on create/update/delete)
+        // and all query params so different filters get their own cached result.
+        $version = Cache::get('products:listing:version', 0);
+        $cacheKey = 'products:listing:v' . $version . ':' . md5($request->getQueryString() ?? '');
+
+        $cached = Cache::remember($cacheKey, 300, function () use ($request) {
+            return $this->buildProductListing($request)->response()->getData(true);
+        });
+
+        return response()->json($cached);
+    }
+
+    private function buildProductListing(Request $request)
     {
         $query = Product::where('status', 'active')
             ->with('primaryImage', 'category');
@@ -32,6 +52,15 @@ class ProductController extends Controller
             $query->where('is_featured', true);
         }
 
+        if ($request->filled('search')) {
+            $searchTerm = $request->input('search');
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'ILIKE', '%' . $searchTerm . '%')
+                  ->orWhere('description', 'ILIKE', '%' . $searchTerm . '%')
+                  ->orWhere('brand', 'ILIKE', '%' . $searchTerm . '%');
+            });
+        }
+
         // Sort is validated to a whitelist of allowed values
         $sort = $request->input('sort', 'newest');
         match ($sort) {
@@ -42,7 +71,7 @@ class ProductController extends Controller
         };
 
         $perPage = min((int) $request->input('per_page', 20), 100);
-        return ProductResource::collection($query->paginate($perPage))->response();
+        return ProductResource::collection($query->paginate($perPage));
     }
 
     /**
@@ -87,7 +116,12 @@ class ProductController extends Controller
             // Upload images
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $i => $file) {
-                    $url = $this->imageService->upload($file);
+                    try {
+                        $url = $this->imageService->upload($file);
+                    } catch (\RuntimeException $e) {
+                        $product->delete();
+                        abort(500, $e->getMessage());
+                    }
                     $product->images()->create([
                         'url' => $url,
                         'is_primary' => $i === 0,
@@ -115,6 +149,7 @@ class ProductController extends Controller
             return $product;
         });
 
+        $this->clearProductListingCache();
         return response()->json(new ProductResource($product->load('primaryImage', 'images', 'category', 'variants')), 201);
     }
 
@@ -130,7 +165,11 @@ class ProductController extends Controller
             // Handle new image uploads
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $file) {
-                    $url = $this->imageService->upload($file);
+                    try {
+                        $url = $this->imageService->upload($file);
+                    } catch (\RuntimeException $e) {
+                        abort(500, $e->getMessage());
+                    }
                     $product->images()->create([
                         'url' => $url,
                         'is_primary' => $product->images()->count() === 0,
@@ -169,6 +208,7 @@ class ProductController extends Controller
             }
         });
 
+        $this->clearProductListingCache();
         return response()->json(new ProductResource($product->fresh()->load('primaryImage', 'images', 'category', 'variants')));
     }
 
@@ -179,8 +219,18 @@ class ProductController extends Controller
     public function destroy(Request $request, Product $product): JsonResponse
     {
         $this->authorize('delete', $product);
-        $product->delete();
+        Product::withoutSyncingToSearch(function () use ($product) {
+            $product->delete();
+        });
+        $this->clearProductListingCache();
         return response()->json(['message' => 'Product deleted']);
+    }
+
+    private function clearProductListingCache(): void
+    {
+        // Increment the version key — old cached pages become unreachable and
+        // will be evicted by TTL, while new requests build fresh entries.
+        Cache::increment('products:listing:version');
     }
 
     /**
