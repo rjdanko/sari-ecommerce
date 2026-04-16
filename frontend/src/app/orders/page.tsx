@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Package, ChevronDown, ChevronUp, ShoppingBag, XCircle } from 'lucide-react';
+import { Package, ShoppingBag, XCircle } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import CancelOrderModal from '@/components/orders/CancelOrderModal';
 import api from '@/lib/api';
@@ -34,15 +34,6 @@ const statusLabels: Record<string, string> = {
   delivered: 'Delivered',
   cancelled: 'Cancelled',
   payment_failed: 'Payment Failed',
-};
-
-const reasonLabels: Record<string, string> = {
-  changed_mind: 'Changed my mind',
-  found_better_deal: 'Found a better deal',
-  ordered_by_mistake: 'Ordered by mistake',
-  delivery_too_long: 'Delivery takes too long',
-  want_to_change_order: 'Wants to change order',
-  other: 'Other',
 };
 
 function formatDate(date: string): string {
@@ -76,7 +67,6 @@ export default function OrdersPage() {
   const { addToast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
 
   useEffect(() => {
@@ -101,10 +91,6 @@ export default function OrdersPage() {
 
     fetchOrders();
   }, [user]);
-
-  const toggleExpand = (id: number) => {
-    setExpandedId((prev) => (prev === id ? null : id));
-  };
 
   const handleConfirmCancel = async (reason: string, notes: string | null) => {
     if (!cancellingOrder) return;
@@ -187,133 +173,63 @@ export default function OrdersPage() {
           {/* Order list */}
           {!isLoading && orders.length > 0 && (
             <div className="space-y-4">
-              {orders.map((order) => {
-                const isExpanded = expandedId === order.id;
-                return (
-                  <div
-                    key={order.id}
-                    className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden"
+              {orders.map((order) => (
+                <div
+                  key={order.id}
+                  className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden"
+                >
+                  {/* Order summary row — navigates to detail page */}
+                  <Link
+                    href={`/orders/${order.id}`}
+                    className="w-full px-5 py-4 flex items-center justify-between gap-4 text-left hover:bg-gray-50/60 transition-colors"
                   >
-                    {/* Order summary row */}
-                    <button
-                      type="button"
-                      onClick={() => toggleExpand(order.id)}
-                      className="w-full px-5 py-4 flex items-center justify-between gap-4 text-left hover:bg-gray-50/60 transition-colors"
-                    >
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sari-50 text-sari-600">
-                          <Package className="w-5 h-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-gray-900">
-                            <span className="font-mono tracking-tight">
-                              {order.order_number}
-                            </span>
-                          </p>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {formatDate(order.created_at)} &middot;{' '}
-                            {order.items.length}{' '}
-                            {order.items.length === 1 ? 'item' : 'items'}
-                          </p>
-                        </div>
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sari-50 text-sari-600">
+                        <Package className="w-5 h-5" />
                       </div>
-
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span
-                          className={cn(
-                            'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                            statusStyles[order.status] ?? 'bg-gray-100 text-gray-700'
-                          )}
-                        >
-                          {statusLabels[order.status] ?? order.status}
-                        </span>
-                        <span className="text-sm font-semibold text-gray-900">
-                          {formatPrice(order.total)}
-                        </span>
-                        {isExpanded ? (
-                          <ChevronUp className="w-4 h-4 text-gray-400" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 text-gray-400" />
-                        )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900">
+                          <span className="font-mono tracking-tight">
+                            {order.order_number}
+                          </span>
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {formatDate(order.created_at)} &middot;{' '}
+                          {order.items.length}{' '}
+                          {order.items.length === 1 ? 'item' : 'items'}
+                        </p>
                       </div>
-                    </button>
+                    </div>
 
-                    {/* Expanded items table */}
-                    {isExpanded && (
-                      <div className="border-t border-gray-100 bg-gray-50/40 px-5 py-4">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="text-xs text-gray-500 uppercase tracking-wider">
-                              <th className="text-left pb-2 font-medium">Product</th>
-                              <th className="text-right pb-2 font-medium">Qty</th>
-                              <th className="text-right pb-2 font-medium">Unit Price</th>
-                              <th className="text-right pb-2 font-medium">Total</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100">
-                            {order.items.map((item) => (
-                              <tr key={item.id}>
-                                <td className="py-2 text-gray-900">
-                                  {item.product_name}
-                                </td>
-                                <td className="py-2 text-right text-gray-600">
-                                  {item.quantity}
-                                </td>
-                                <td className="py-2 text-right text-gray-600">
-                                  {formatPrice(item.unit_price)}
-                                </td>
-                                <td className="py-2 text-right font-medium text-gray-900">
-                                  {formatPrice(item.total_price)}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-
-                        {/* Order totals */}
-                        <div className="mt-3 pt-3 border-t border-gray-200 space-y-1 text-sm text-right">
-                          <p className="text-gray-500">
-                            Subtotal: <span className="text-gray-700">{formatPrice(order.subtotal)}</span>
-                          </p>
-                          <p className="text-gray-500">
-                            Shipping: <span className="text-gray-700">{formatPrice(order.shipping_fee)}</span>
-                          </p>
-                          <p className="text-gray-500">
-                            Tax: <span className="text-gray-700">{formatPrice(order.tax)}</span>
-                          </p>
-                          <p className="font-semibold text-gray-900">
-                            Total: {formatPrice(order.total)}
-                          </p>
-                        </div>
-
-                        {/* Cancellation reason */}
-                        {order.status === 'cancelled' && order.cancellation_reason && (
-                          <div className="mt-3 pt-3 border-t border-gray-200">
-                            <p className="text-sm text-gray-500">
-                              <span className="font-medium text-gray-700">Reason:</span>{' '}
-                              {reasonLabels[order.cancellation_reason] ?? order.cancellation_reason}
-                              {order.cancellation_notes && ` — ${order.cancellation_notes}`}
-                            </p>
-                          </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span
+                        className={cn(
+                          'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+                          statusStyles[order.status] ?? 'bg-gray-100 text-gray-700'
                         )}
+                      >
+                        {statusLabels[order.status] ?? order.status}
+                      </span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        {formatPrice(order.total)}
+                      </span>
+                    </div>
+                  </Link>
 
-                        {/* Cancel button — only for pending_confirmation orders */}
-                        {order.status === 'pending_confirmation' && (
-                          <div className="mt-4 pt-3 border-t border-gray-200">
-                            <button
-                              onClick={() => setCancellingOrder(order)}
-                              className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 font-medium transition-colors"
-                            >
-                              <XCircle className="w-4 h-4" />
-                              Cancel Order
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                  {/* Inline cancel button for pending_confirmation orders */}
+                  {order.status === 'pending_confirmation' && (
+                    <div className="px-5 pb-4 border-t border-gray-50">
+                      <button
+                        onClick={() => setCancellingOrder(order)}
+                        className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 font-medium transition-colors mt-3"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Cancel Order
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
