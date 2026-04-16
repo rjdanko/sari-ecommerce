@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Services\PaymentService;
 use Illuminate\Http\JsonResponse;
@@ -31,7 +32,10 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        return response()->json($order->load('items'));
+        return response()->json(new OrderResource($order->load([
+            'items.variant',
+            'items.product.primaryImage',
+        ])));
     }
 
     /**
@@ -43,7 +47,7 @@ class OrderController extends Controller
         $orders = Order::whereHas('items.product', function ($q) use ($request) {
             $q->where('business_id', $request->user()->id);
         })
-            ->with('items', 'user')
+            ->with(['items.variant', 'items.product.primaryImage', 'user'])
             ->orderByDesc('created_at')
             ->paginate(20);
 
