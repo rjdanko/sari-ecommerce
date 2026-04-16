@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Search, ShoppingCart } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Search, ShoppingCart, ChevronDown, Eye, CheckCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { cn, formatPrice } from '@/lib/utils';
+import ConfirmOrderModal from '@/components/orders/ConfirmOrderModal';
 
 interface OrderItem {
   id: number;
@@ -75,10 +77,14 @@ function SkeletonRow() {
 }
 
 export default function BusinessOrdersPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [confirmingOrder, setConfirmingOrder] = useState<Order | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchOrders = useCallback(async (query = '', status = 'all') => {
@@ -100,6 +106,13 @@ export default function BusinessOrdersPage() {
     fetchOrders();
   }, [fetchOrders]);
 
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handler = () => setOpenDropdownId(null);
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, []);
+
   const handleSearchChange = (value: string) => {
     setSearch(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -108,13 +121,17 @@ export default function BusinessOrdersPage() {
     }, 300);
   };
 
-  const handleConfirmOrder = async (orderId: number) => {
-    if (!window.confirm('Are you sure you want to confirm this order?')) return;
+  const handleConfirmOrder = async () => {
+    if (!confirmingOrder) return;
+    setConfirmLoading(true);
     try {
-      await api.post(`/api/business/orders/${orderId}/confirm`);
+      await api.post(`/api/business/orders/${confirmingOrder.id}/confirm`);
       fetchOrders(search, statusFilter);
+      setConfirmingOrder(null);
     } catch {
-      // error handled silently
+      // silently fail
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -184,8 +201,13 @@ export default function BusinessOrdersPage() {
               {!loading &&
                 orders.map((order) => (
                   <tr key={order.id} className="transition-colors hover:bg-gray-50/50">
-                    <td className="px-5 py-4">
-                      <span className="font-mono text-sm font-medium text-gray-900">{order.order_number}</span>
+                    <td
+                      className="px-5 py-4 cursor-pointer"
+                      onClick={() => router.push(`/business/orders/${order.id}`)}
+                    >
+                      <span className="font-mono text-sm font-medium text-gray-900 hover:text-sari-600 transition-colors">
+                        {order.order_number}
+                      </span>
                     </td>
                     <td className="px-5 py-4 text-gray-600">{formatDate(order.created_at)}</td>
                     <td className="px-5 py-4">
@@ -213,12 +235,44 @@ export default function BusinessOrdersPage() {
                       )}
                     </td>
                     <td className="px-5 py-4">
-                      {order.status === 'pending_confirmation' && (
+                      {order.status === 'pending_confirmation' ? (
+                        <div className="flex items-center gap-1 relative">
+                          <button
+                            onClick={() => setConfirmingOrder(order)}
+                            className="rounded-l-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenDropdownId(openDropdownId === order.id ? null : order.id);
+                            }}
+                            className="rounded-r-lg bg-emerald-500 border-l border-emerald-400 px-2 py-1.5 text-white hover:bg-emerald-600 transition-colors"
+                            aria-label="More actions"
+                          >
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          </button>
+                          {/* Dropdown */}
+                          {openDropdownId === order.id && (
+                            <div className="absolute top-full right-0 mt-1 z-20 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 text-sm">
+                              <button
+                                onClick={() => { router.push(`/business/orders/${order.id}`); setOpenDropdownId(null); }}
+                                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <Eye className="w-4 h-4 text-gray-400" />
+                                View Order Details
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
                         <button
-                          onClick={() => handleConfirmOrder(order.id)}
-                          className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors"
+                          onClick={() => router.push(`/business/orders/${order.id}`)}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200 transition-colors"
                         >
-                          Confirm
+                          <Eye className="w-3 h-3" />
+                          View
                         </button>
                       )}
                     </td>
@@ -243,6 +297,14 @@ export default function BusinessOrdersPage() {
           </div>
         )}
       </div>
+
+      <ConfirmOrderModal
+        isOpen={!!confirmingOrder}
+        orderNumber={confirmingOrder?.order_number ?? ''}
+        onConfirm={handleConfirmOrder}
+        onCancel={() => setConfirmingOrder(null)}
+        loading={confirmLoading}
+      />
     </div>
   );
 }
