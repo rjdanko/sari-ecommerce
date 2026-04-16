@@ -20,9 +20,13 @@ import {
   Minus,
   Plus,
   Trash2,
+  Ticket,
+  X,
 } from 'lucide-react';
+import { useVouchers } from '@/hooks/useVouchers';
+import type { ApplyVoucherResponse } from '@/types/voucher';
 
-type PaymentMethod = 'cod' | 'qrph';
+type PaymentMethod = 'cod' | 'qrph' | 'card';
 
 export default function CheckoutPage() {
   return (
@@ -57,6 +61,11 @@ function CheckoutContent() {
   const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
   const [deliveryBreakdown, setDeliveryBreakdown] = useState<any>(null);
   const [estimatingFee, setEstimatingFee] = useState(false);
+  const [voucherCode, setVoucherCode] = useState('');
+  const [appliedVoucher, setAppliedVoucher] = useState<ApplyVoucherResponse | null>(null);
+  const [applyingVoucher, setApplyingVoucher] = useState(false);
+  const [voucherError, setVoucherError] = useState('');
+  const { applyVoucher, claimedVouchers, fetchMyClaimed } = useVouchers();
   const [form, setForm] = useState({
     fullName: '',
     phone: '',
@@ -66,6 +75,23 @@ function CheckoutContent() {
     province: '',
     zip: '',
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!form.fullName.trim()) errors.fullName = 'Full name is required';
+    if (!form.phone.trim()) errors.phone = 'Phone number is required';
+    if (!form.address1.trim()) errors.address1 = 'Address is required';
+    if (!form.city.trim()) errors.city = 'City is required';
+    if (!form.province.trim()) errors.province = 'Province / State is required';
+    if (!form.zip.trim()) errors.zip = 'Zip / Postal code is required';
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  useEffect(() => {
+    fetchMyClaimed();
+  }, [fetchMyClaimed]);
 
   useEffect(() => {
     if (isDirect && (directSlug || directProductId)) {
@@ -111,10 +137,19 @@ function CheckoutContent() {
     (sum, item) => sum + item.product.base_price * item.quantity,
     0,
   );
-  const total = subtotal + (deliveryFee ?? 0);
+  const discount = appliedVoucher?.discount ?? 0;
+  const effectiveShipping = appliedVoucher?.free_shipping ? 0 : (deliveryFee ?? 0);
+  const total = subtotal + effectiveShipping - discount;
 
   const updateForm = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    if (formErrors[field]) {
+      setFormErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   };
 
   // Estimate delivery fee when address fields are filled
@@ -165,7 +200,32 @@ function CheckoutContent() {
     }
   };
 
+  const handleApplyVoucher = async (code: string) => {
+    if (!code.trim()) return;
+    setApplyingVoucher(true);
+    setVoucherError('');
+    const result = await applyVoucher(code);
+    if (result.success && result.data) {
+      setAppliedVoucher(result.data);
+      setVoucherCode(result.data.voucher.code);
+    } else {
+      setVoucherError(result.error || 'Invalid voucher code');
+    }
+    setApplyingVoucher(false);
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherCode('');
+    setVoucherError('');
+  };
+
   const handlePlaceOrder = async () => {
+    if (!validateForm()) {
+      const firstErrorEl = document.querySelector('[data-field-error]');
+      firstErrorEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     setError('');
     setSubmitting(true);
     try {
@@ -182,6 +242,10 @@ function CheckoutContent() {
           country: 'PH',
         },
       };
+
+      if (appliedVoucher) {
+        payload.voucher_code = appliedVoucher.voucher.code;
+      }
 
       if (isDirect && directProductId) {
         payload.direct_buy = {
@@ -203,11 +267,22 @@ function CheckoutContent() {
         window.location.href = data.redirect_url || '/checkout/success';
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to place order. Please try again.');
+      const message = err.response?.data?.message || err.response?.data?.error || 'Failed to place order. Please try again.';
+      setError(message);
+      setTimeout(() => {
+        document.querySelector('[data-checkout-error]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
     } finally {
       setSubmitting(false);
     }
   };
+
+  const FieldError = ({ field }: { field: string }) =>
+    formErrors[field] ? (
+      <p data-field-error className="mt-1 text-xs text-red-500">
+        {formErrors[field]}
+      </p>
+    ) : null;
 
   if (cartLoading || directLoading) {
     return (
@@ -275,7 +350,10 @@ function CheckoutContent() {
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
           {error && (
-            <div className="mb-6 bg-red-50 text-red-600 text-sm rounded-xl p-4 border border-red-100 animate-fade-in">
+            <div
+              data-checkout-error
+              className="mb-6 bg-red-50 text-red-600 text-sm rounded-xl p-4 border border-red-100 animate-fade-in"
+            >
               {error}
             </div>
           )}
@@ -305,8 +383,12 @@ function CheckoutContent() {
                       value={form.fullName}
                       onChange={(e) => updateForm('fullName', e.target.value)}
                       placeholder="Juan Dela Cruz"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                      className={cn(
+                        'w-full px-4 py-3 rounded-xl border text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200',
+                        formErrors.fullName ? 'border-red-400 bg-red-50/30' : 'border-gray-200',
+                      )}
                     />
+                    <FieldError field="fullName" />
                   </div>
 
                   <div className="sm:col-span-1">
@@ -323,8 +405,12 @@ function CheckoutContent() {
                         updateForm('phone', numericOnly);
                       }}
                       placeholder="09123456789"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                      className={cn(
+                        'w-full px-4 py-3 rounded-xl border text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200',
+                        formErrors.phone ? 'border-red-400 bg-red-50/30' : 'border-gray-200',
+                      )}
                     />
+                    <FieldError field="phone" />
                   </div>
 
                   <div className="sm:col-span-2">
@@ -338,9 +424,13 @@ function CheckoutContent() {
                         value={form.address1}
                         onChange={(e) => updateForm('address1', e.target.value)}
                         placeholder="House/Unit No., Street, Barangay"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                        className={cn(
+                          'w-full pl-10 pr-4 py-3 rounded-xl border text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200',
+                          formErrors.address1 ? 'border-red-400 bg-red-50/30' : 'border-gray-200',
+                        )}
                       />
                     </div>
+                    <FieldError field="address1" />
                   </div>
 
                   <div className="sm:col-span-2">
@@ -366,8 +456,12 @@ function CheckoutContent() {
                       value={form.city}
                       onChange={(e) => updateForm('city', e.target.value)}
                       placeholder="Quezon City"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                      className={cn(
+                        'w-full px-4 py-3 rounded-xl border text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200',
+                        formErrors.city ? 'border-red-400 bg-red-50/30' : 'border-gray-200',
+                      )}
                     />
+                    <FieldError field="city" />
                   </div>
 
                   <div>
@@ -379,8 +473,12 @@ function CheckoutContent() {
                       value={form.province}
                       onChange={(e) => updateForm('province', e.target.value)}
                       placeholder="Metro Manila"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                      className={cn(
+                        'w-full px-4 py-3 rounded-xl border text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200',
+                        formErrors.province ? 'border-red-400 bg-red-50/30' : 'border-gray-200',
+                      )}
                     />
+                    <FieldError field="province" />
                   </div>
 
                   <div className="sm:col-span-1">
@@ -392,8 +490,12 @@ function CheckoutContent() {
                       value={form.zip}
                       onChange={(e) => updateForm('zip', e.target.value)}
                       placeholder="1100"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200"
+                      className={cn(
+                        'w-full px-4 py-3 rounded-xl border text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200',
+                        formErrors.zip ? 'border-red-400 bg-red-50/30' : 'border-gray-200',
+                      )}
                     />
+                    <FieldError field="zip" />
                   </div>
 
                   <div className="sm:col-span-2">
@@ -430,7 +532,7 @@ function CheckoutContent() {
                   </span>
                   Payment Method
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <button
                     onClick={() => setPaymentMethod('cod')}
                     className={cn(
@@ -494,7 +596,132 @@ function CheckoutContent() {
                       <span className="text-xs text-gray-400">Scan to pay instantly</span>
                     </div>
                   </button>
+
+                  <button
+                    onClick={() => setPaymentMethod('card')}
+                    className={cn(
+                      'flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all duration-200 cursor-pointer',
+                      paymentMethod === 'card'
+                        ? 'border-sari-500 bg-sari-50/60 shadow-sm shadow-sari-500/10'
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50',
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200',
+                        paymentMethod === 'card'
+                          ? 'bg-gradient-to-br from-sari-400 to-sari-600 text-white'
+                          : 'bg-gray-100 text-gray-400',
+                      )}
+                    >
+                      <CreditCard className="w-5 h-5" strokeWidth={1.8} />
+                    </div>
+                    <div>
+                      <span
+                        className={cn(
+                          'font-medium text-sm block transition-colors',
+                          paymentMethod === 'card' ? 'text-sari-800' : 'text-gray-700',
+                        )}
+                      >
+                        Card Payment
+                      </span>
+                      <span className="text-xs text-gray-400">Visa / Mastercard</span>
+                    </div>
+                  </button>
                 </div>
+              </section>
+
+              {/* Voucher Code */}
+              <section
+                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-slide-up"
+                style={{ animationDelay: '0.15s' }}
+              >
+                <h2 className="font-display text-lg text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-sari-100 text-sari-700 text-xs font-bold">
+                    3
+                  </span>
+                  Voucher Code
+                </h2>
+
+                {appliedVoucher ? (
+                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                        <Ticket className="w-4 h-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-green-800">
+                          {appliedVoucher.voucher.name}
+                        </p>
+                        <p className="text-xs text-green-600">
+                          {appliedVoucher.voucher.code}
+                          {appliedVoucher.free_shipping && ' — Free Shipping'}
+                          {appliedVoucher.discount > 0 && ` — Save ${formatPrice(appliedVoucher.discount)}`}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleRemoveVoucher}
+                      className="p-1.5 text-green-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      aria-label="Remove voucher"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Ticket className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                        <input
+                          type="text"
+                          value={voucherCode}
+                          onChange={(e) => {
+                            setVoucherCode(e.target.value.toUpperCase());
+                            setVoucherError('');
+                          }}
+                          placeholder="Enter voucher code"
+                          maxLength={50}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-300 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200 uppercase"
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleApplyVoucher(voucherCode)}
+                        disabled={!voucherCode.trim() || applyingVoucher}
+                        className="px-5 py-3 rounded-xl bg-gradient-to-r from-sari-500 to-sari-600 text-white text-sm font-medium hover:from-sari-600 hover:to-sari-700 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                      >
+                        {applyingVoucher ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          'Apply'
+                        )}
+                      </button>
+                    </div>
+                    {voucherError && (
+                      <p className="mt-2 text-xs text-red-500">{voucherError}</p>
+                    )}
+
+                    {/* Quick select from claimed vouchers */}
+                    {claimedVouchers.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs text-gray-400 mb-2">Your claimed vouchers:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {claimedVouchers.map((claim) => (
+                            <button
+                              key={claim.id}
+                              onClick={() => handleApplyVoucher(claim.voucher.code)}
+                              disabled={applyingVoucher}
+                              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-sari-700 bg-sari-50 hover:bg-sari-100 border border-sari-200 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              <Ticket className="w-3 h-3" />
+                              {claim.voucher.code}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </section>
             </div>
 
@@ -606,13 +833,26 @@ function CheckoutContent() {
                       )}
                     </span>
                     <span className="font-medium text-gray-700">
-                      {estimatingFee
-                        ? '...'
-                        : deliveryFee !== null
-                          ? formatPrice(deliveryFee)
-                          : '—'}
+                      {appliedVoucher?.free_shipping ? (
+                        <span className="text-green-600 font-semibold">FREE</span>
+                      ) : estimatingFee ? (
+                        '...'
+                      ) : deliveryFee !== null ? (
+                        formatPrice(deliveryFee)
+                      ) : (
+                        '—'
+                      )}
                     </span>
                   </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span className="flex items-center gap-1">
+                        <Ticket className="w-3.5 h-3.5" />
+                        Voucher Discount
+                      </span>
+                      <span className="font-semibold">-{formatPrice(discount)}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t border-gray-200 mt-4 pt-4">
@@ -633,11 +873,11 @@ function CheckoutContent() {
                   {submitting ? (
                     <span className="inline-flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Placing Order...
+                      {paymentMethod === 'card' || paymentMethod === 'qrph' ? 'Redirecting...' : 'Placing Order...'}
                     </span>
                   ) : (
                     <>
-                      Place Order
+                      {paymentMethod === 'card' ? 'Pay with Card' : paymentMethod === 'qrph' ? 'Pay with QR PH' : 'Place Order'}
                       <span className="inline-block transition-transform duration-200 group-hover:translate-x-0.5">
                         &rarr;
                       </span>

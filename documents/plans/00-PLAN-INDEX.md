@@ -99,7 +99,12 @@ where relevant, but here is the authoritative checklist:
 | 12 | Frontend Pages & Components | [12-FRONTEND-PAGES.md](./12-FRONTEND-PAGES.md) | 5-6h |
 | 13 | Integration Testing & Verification | [13-VERIFICATION.md](./13-VERIFICATION.md) | 3-4h |
 
-**Total estimated time: 45-62 hours for a single developer.**
+| 32 | Image Display, Store Coords, Gender Filter & Search Fix | [32-IMAGE-DISPLAY-STORE-COORDS-GENDER-FILTER.md](./32-IMAGE-DISPLAY-STORE-COORDS-GENDER-FILTER.md) | 3-5h |
+| 33 | Voucher System, Cart Variant Editing, Search Fix & Image Fix | [33-VOUCHER-CART-OPTIONS-SEARCH-FIX.md](./33-VOUCHER-CART-OPTIONS-SEARCH-FIX.md) | 8-12h |
+| 34 | Product Delete Fix, Card Payment, Image Fix & Performance | [34-DELETE-FIX-CARD-PAYMENT-IMAGE-FIX-PERFORMANCE.md](./34-DELETE-FIX-CARD-PAYMENT-IMAGE-FIX-PERFORMANCE.md) | 6-10h |
+| 35 | Supabase S3 Credentials Fix & Checkout Button Fix | [35-SUPABASE-CREDS-FIX-CHECKOUT-BUTTON-FIX.md](./35-SUPABASE-CREDS-FIX-CHECKOUT-BUTTON-FIX.md) | Completed |
+
+**Total estimated time: 53-74 hours for a single developer.**
 
 ---
 
