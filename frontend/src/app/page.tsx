@@ -81,7 +81,7 @@ export default function HomePage() {
               {categories.map((cat, i) => (
                 <Link
                   key={cat.slug}
-                  href={`/categories/${cat.slug}`}
+                  href={`/products?category=${cat.slug}`}
                   className={`group relative rounded-2xl overflow-hidden border border-gray-200 shadow-sm flex flex-col justify-between aspect-[3/4] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-gray-300`}
                   style={{ animationDelay: `${i * 100}ms` }}
                 >
