@@ -8,10 +8,11 @@ return new class extends Migration {
     {
         // Find products that have images but none marked as primary,
         // then set the first image (lowest sort_order) as primary.
+        $castExpr = DB::getDriverName() === 'sqlite' ? 'SUM(CAST(is_primary AS INTEGER)) = 0' : 'SUM(is_primary::int) = 0';
         $productsWithoutPrimary = DB::table('product_images')
             ->select('product_id')
             ->groupBy('product_id')
-            ->havingRaw('SUM(is_primary::int) = 0')
+            ->havingRaw($castExpr)
             ->pluck('product_id');
 
         foreach ($productsWithoutPrimary as $productId) {

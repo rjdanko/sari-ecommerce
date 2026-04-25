@@ -56,6 +56,7 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
     Route::post('/logout', LogoutController::class);
     Route::get('/user', fn (Request $request) => $request->user()->load('roles'));
     Route::put('/user/profile', [App\Http\Controllers\ProfileController::class, 'update']);
+    Route::post('/user/become-seller', App\Http\Controllers\BecomeSellerController::class);
 
     // Cart (Redis-backed)
     Route::get('/cart', [CartController::class, 'index']);
