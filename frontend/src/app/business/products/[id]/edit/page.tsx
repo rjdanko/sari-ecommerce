@@ -65,6 +65,7 @@ export default function EditProductPage() {
   const [shortDescription, setShortDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [brand, setBrand] = useState('');
+  const [gender, setGender] = useState('');
 
   // Pricing & stock
   const [basePrice, setBasePrice] = useState('');
@@ -100,6 +101,7 @@ export default function EditProductPage() {
         setShortDescription(p.short_description ?? '');
         setCategoryId(String(p.category?.id ?? ''));
         setBrand(p.brand ?? '');
+        setGender(p.gender || '');
         setBasePrice(String(p.base_price ?? ''));
         setCompareAtPrice(p.compare_at_price ? String(p.compare_at_price) : '');
         setSku(p.sku ?? '');
@@ -239,6 +241,7 @@ export default function EditProductPage() {
     formData.append('short_description', shortDescription);
     formData.append('category_id', categoryId);
     formData.append('brand', brand);
+    if (gender) formData.append('gender', gender);
     formData.append('base_price', basePrice);
     if (compareAtPrice) formData.append('compare_at_price', compareAtPrice);
     formData.append('sku', sku);
@@ -385,6 +388,21 @@ export default function EditProductPage() {
                     maxLength={255}
                     className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-sari-400 focus:outline-none focus:ring-2 focus:ring-sari-100 transition-colors"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Gender
+                  </label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:ring-2 focus:ring-sari-500/20 focus:border-sari-500 outline-none transition-all duration-200 bg-white"
+                  >
+                    <option value="">Not specified</option>
+                    <option value="men">Men</option>
+                    <option value="women">Women</option>
+                    <option value="unisex">Unisex</option>
+                  </select>
                 </div>
               </div>
             </div>
