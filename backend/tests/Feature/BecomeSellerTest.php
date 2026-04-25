@@ -88,4 +88,48 @@ class BecomeSellerTest extends TestCase
 
         $response->assertStatus(422);
     }
+
+    #[Test]
+    public function unauthenticated_users_cannot_convert(): void
+    {
+        $response = $this->postJson('/api/user/become-seller', [
+            'name' => 'Test Store',
+        ]);
+
+        $response->assertUnauthorized();
+    }
+
+    #[Test]
+    public function name_is_required(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole(RoleEnum::USER->value);
+
+        $response = $this->actingAs($user)->postJson('/api/user/become-seller', [
+            // no name
+            'description' => 'Just a description',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name']);
+    }
+
+    #[Test]
+    public function a_google_auth_user_without_a_password_can_convert(): void
+    {
+        // Simulate a Google-auth user: no password, email pre-verified
+        $user = User::factory()->create([
+            'password' => null,
+            'google_id' => 'google-test-id-123',
+            'email_verified_at' => now(),
+        ]);
+        $user->assignRole(RoleEnum::USER->value);
+
+        $response = $this->actingAs($user)->postJson('/api/user/become-seller', [
+            'name' => 'Google User Store',
+        ]);
+
+        $response->assertStatus(201);
+        $this->assertTrue($user->fresh()->hasRole(RoleEnum::BUSINESS->value));
+    }
 }
