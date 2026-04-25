@@ -147,13 +147,12 @@ class BecomeSellerTest extends TestCase
             }
         });
 
-        try {
-            $this->actingAs($user)->postJson('/api/user/become-seller', [
-                'name' => 'Failing Store',
-            ]);
-        } catch (\Throwable $e) {
-            // expected — controller rethrows after cleanup
-        }
+        $response = $this->actingAs($user)->postJson('/api/user/become-seller', [
+            'name' => 'Failing Store',
+        ]);
+
+        // The transaction rethrows on failure — Laravel returns 500
+        $response->assertStatus(500);
 
         // Role must NOT have been assigned because the transaction rolled back
         $this->assertFalse($user->fresh()->hasRole(RoleEnum::BUSINESS->value));
