@@ -76,6 +76,10 @@ class GoogleAuthController extends Controller
             return response()->json(['message' => 'User not found.'], 404);
         }
 
+        if ($user->is_suspended) {
+            return response()->json(['error' => 'Account suspended'], 403);
+        }
+
         Auth::login($user);
         $request->session()->regenerate();
 

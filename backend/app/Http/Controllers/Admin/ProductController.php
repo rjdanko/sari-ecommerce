@@ -12,7 +12,7 @@ class ProductController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Product::with(['category', 'primaryImage', 'business'])
+        $query = Product::with(['category', 'primaryImage', 'business', 'store'])
             ->when($request->search, fn ($q, $search) =>
                 $q->where('name', 'ilike', "%{$search}%")
                   ->orWhere('sku', 'ilike', "%{$search}%")
@@ -23,11 +23,22 @@ class ProductController extends Controller
             ->when($request->category_id, fn ($q, $catId) =>
                 $q->where('category_id', $catId)
             )
+            ->when($request->gender, fn ($q, $gender) =>
+                $q->where('gender', $gender)
+            )
+            ->when($request->boolean('low_stock'), fn ($q) =>
+                $q->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
+            )
             ->latest();
 
         return response()->json(
             ProductResource::collection($query->paginate($request->per_page ?? 20))
         );
+    }
+
+    public function show(Product $product): JsonResponse
+    {
+        return response()->json(new ProductResource($product->load(['category', 'primaryImage', 'store', 'business'])));
     }
 
     public function update(Request $request, Product $product): JsonResponse

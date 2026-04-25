@@ -117,16 +117,31 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
     // ====================================================================
     Route::middleware('role:admin')->prefix('admin')->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index']);
+
         Route::apiResource('/users', App\Http\Controllers\Admin\UserController::class);
+        Route::post('/users/{user}/suspend', [App\Http\Controllers\Admin\UserController::class, 'suspend']);
+        Route::post('/users/{user}/unsuspend', [App\Http\Controllers\Admin\UserController::class, 'unsuspend']);
+
         Route::get('/inventory', [App\Http\Controllers\Admin\InventoryController::class, 'index']);
         Route::put('/inventory/{product}', [App\Http\Controllers\Admin\InventoryController::class, 'update']);
 
         Route::get('/products', [App\Http\Controllers\Admin\ProductController::class, 'index']);
+        Route::get('/products/{product}', [App\Http\Controllers\Admin\ProductController::class, 'show']);
         Route::put('/products/{product}', [App\Http\Controllers\Admin\ProductController::class, 'update']);
         Route::delete('/products/{product}', [App\Http\Controllers\Admin\ProductController::class, 'destroy']);
 
         Route::get('/orders', [App\Http\Controllers\Admin\OrderController::class, 'index']);
         Route::get('/orders/{order}', [App\Http\Controllers\Admin\OrderController::class, 'show']);
         Route::put('/orders/{order}/status', [App\Http\Controllers\Admin\OrderController::class, 'updateStatus']);
+
+        Route::get('/stores', [App\Http\Controllers\Admin\StoreController::class, 'index']);
+        Route::get('/stores/{store}', [App\Http\Controllers\Admin\StoreController::class, 'show']);
+        Route::post('/stores/{store}/suspend', [App\Http\Controllers\Admin\StoreController::class, 'suspend']);
+        Route::post('/stores/{store}/unsuspend', [App\Http\Controllers\Admin\StoreController::class, 'unsuspend']);
+
+        Route::apiResource('/vouchers', App\Http\Controllers\Admin\VoucherController::class);
+
+        Route::get('/reviews', [App\Http\Controllers\Admin\ReviewController::class, 'index']);
+        Route::delete('/reviews/{review}', [App\Http\Controllers\Admin\ReviewController::class, 'destroy']);
     });
 });

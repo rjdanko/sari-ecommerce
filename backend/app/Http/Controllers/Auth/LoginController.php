@@ -19,11 +19,18 @@ class LoginController extends Controller
             ], 401);
         }
 
+        $user = Auth::user();
+
+        if ($user->is_suspended) {
+            Auth::logout();
+            return response()->json(['error' => 'Account suspended'], 403);
+        }
+
         $request->session()->regenerate();
 
         return response()->json([
             'message' => 'Login successful.',
-            'user' => Auth::user()->load('roles'),
+            'user' => $user->load('roles'),
         ]);
     }
 }

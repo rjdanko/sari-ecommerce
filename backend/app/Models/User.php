@@ -15,7 +15,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'first_name', 'last_name', 'email', 'password',
-        'google_id', 'phone', 'avatar_url', 'default_address',
+        'google_id', 'phone', 'avatar_url', 'default_address', 'is_suspended',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -26,6 +26,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'default_address' => 'array',
+            'is_suspended' => 'boolean',
         ];
     }
 

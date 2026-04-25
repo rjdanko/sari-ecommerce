@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
 
 class UserController extends Controller
 {
@@ -14,8 +15,16 @@ class UserController extends Controller
     {
         $query = User::with('roles');
 
-        if ($request->has('role')) {
+        if ($request->has('role') && $request->input('role') !== 'all') {
             $query->whereHas('roles', fn ($q) => $q->where('name', $request->input('role')));
+        }
+
+        if ($request->has('status')) {
+            match ($request->input('status')) {
+                'suspended' => $query->where('is_suspended', true),
+                'active'    => $query->where('is_suspended', false),
+                default     => null,
+            };
         }
 
         if ($request->has('search')) {
@@ -39,26 +48,48 @@ class UserController extends Controller
     {
         $request->validate([
             'first_name' => ['sometimes', 'string', 'max:255'],
-            'last_name' => ['sometimes', 'string', 'max:255'],
-            'role' => ['sometimes', 'string', 'in:user,business,admin'],
+            'last_name'  => ['sometimes', 'string', 'max:255'],
+            'role'       => ['sometimes', 'string', 'in:user,business'],
         ]);
 
         if ($request->has('role')) {
+            if ($user->id === auth()->id()) {
+                return response()->json(['error' => 'Cannot change your own role'], 422);
+            }
             $user->syncRoles([$request->input('role')]);
         }
 
-        $user->update($request->except('role'));
+        $user->update($request->only('first_name', 'last_name'));
         return response()->json($user->fresh()->load('roles'));
     }
 
     public function destroy(User $user): JsonResponse
     {
-        // Prevent admin from deleting themselves
         if ($user->id === auth()->id()) {
             return response()->json(['error' => 'Cannot delete your own account'], 422);
         }
 
-        $user->delete(); // soft delete
+        $user->delete();
         return response()->json(['message' => 'User deleted']);
+    }
+
+    public function suspend(User $user): JsonResponse
+    {
+        if ($user->id === auth()->id()) {
+            return response()->json(['error' => 'Cannot suspend your own account'], 422);
+        }
+
+        DB::transaction(function () use ($user) {
+            $user->update(['is_suspended' => true]);
+            $user->tokens()->delete();
+        });
+
+        return response()->json(['message' => 'User suspended']);
+    }
+
+    public function unsuspend(User $user): JsonResponse
+    {
+        $user->update(['is_suspended' => false]);
+        return response()->json(['message' => 'User unsuspended']);
     }
 }

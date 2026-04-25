@@ -42,6 +42,7 @@ class ProductController extends Controller
     private function buildProductListing(Request $request)
     {
         $query = Product::where('status', 'active')
+            ->whereHas('store', fn ($q) => $q->where('is_active', true))
             ->with('primaryImage', 'category');
 
         if ($request->has('category')) {
