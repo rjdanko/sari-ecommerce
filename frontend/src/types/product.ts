@@ -24,6 +24,7 @@ export interface Product {
   stock_quantity: number;
   status: 'draft' | 'active' | 'archived';
   brand: string | null;
+  gender: 'men' | 'women' | 'unisex' | null;
   is_featured: boolean;
   average_rating: number;
   review_count: number;
