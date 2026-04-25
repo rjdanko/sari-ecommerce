@@ -25,6 +25,8 @@ const sortOptions = [
 interface SidebarFilterProps {
   activeCategory: string;
   onCategoryChange: (slug: string) => void;
+  activeGender: string;
+  onGenderChange: (value: string) => void;
   sortBy: string;
   onSortChange: (value: string) => void;
   priceRange: [number, number];
@@ -36,6 +38,8 @@ interface SidebarFilterProps {
 export default function SidebarFilter({
   activeCategory,
   onCategoryChange,
+  activeGender,
+  onGenderChange,
   sortBy,
   onSortChange,
   priceRange,
@@ -45,6 +49,7 @@ export default function SidebarFilter({
 }: SidebarFilterProps) {
   const [expandedSections, setExpandedSections] = useState({
     category: true,
+    gender: true,
     price: true,
     sort: true,
   });
@@ -118,6 +123,53 @@ export default function SidebarFilter({
                       <span className="w-1.5 h-1.5 rounded-full bg-sari-500" />
                     )}
                     {cat.name}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Gender Section */}
+      <div className="pt-4">
+        <button
+          onClick={() => toggleSection('gender')}
+          className="flex items-center justify-between w-full text-left group"
+        >
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Gender
+          </span>
+          <ChevronDown
+            className={cn(
+              'w-4 h-4 text-gray-400 transition-transform duration-200',
+              expandedSections.gender && 'rotate-180',
+            )}
+          />
+        </button>
+        {expandedSections.gender && (
+          <ul className="mt-3 space-y-0.5">
+            {[
+              { label: 'All', value: '' },
+              { label: 'Men', value: 'men' },
+              { label: 'Women', value: 'women' },
+              { label: 'Unisex', value: 'unisex' },
+            ].map((opt) => (
+              <li key={opt.value === '' ? 'all' : opt.value}>
+                <button
+                  onClick={() => onGenderChange(opt.value)}
+                  className={cn(
+                    'flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-all duration-150',
+                    activeGender === opt.value
+                      ? 'bg-sari-50 text-sari-700 font-medium'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    {activeGender === opt.value && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-sari-500" />
+                    )}
+                    {opt.label}
                   </span>
                 </button>
               </li>
