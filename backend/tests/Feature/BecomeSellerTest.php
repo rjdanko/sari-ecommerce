@@ -42,4 +42,50 @@ class BecomeSellerTest extends TestCase
             'name' => 'Corner Sari-Sari Store',
         ]);
     }
+
+    #[Test]
+    public function a_business_user_cannot_convert_again(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole(RoleEnum::BUSINESS->value);
+
+        $response = $this->actingAs($user)->postJson('/api/user/become-seller', [
+            'name' => 'Duplicate Store',
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    #[Test]
+    public function an_admin_user_cannot_use_the_conversion_endpoint(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole(RoleEnum::ADMIN->value);
+
+        $response = $this->actingAs($user)->postJson('/api/user/become-seller', [
+            'name' => 'Admin Store',
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    #[Test]
+    public function a_user_with_an_existing_store_cannot_convert(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole(RoleEnum::USER->value);
+
+        // Simulate data drift: user somehow has a store row without the business role
+        Store::create([
+            'user_id' => $user->id,
+            'name'    => 'Legacy Store',
+            'slug'    => 'legacy-store-' . \Illuminate\Support\Str::random(5),
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/api/user/become-seller', [
+            'name' => 'New Store',
+        ]);
+
+        $response->assertStatus(422);
+    }
 }
