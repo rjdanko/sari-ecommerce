@@ -48,6 +48,10 @@ class ProductController extends Controller
             $query->whereHas('category', fn ($q) => $q->where('slug', $request->input('category')));
         }
 
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->input('gender'));
+        }
+
         if ($request->boolean('featured')) {
             $query->where('is_featured', true);
         }
