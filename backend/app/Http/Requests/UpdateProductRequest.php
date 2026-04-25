@@ -24,6 +24,7 @@ class UpdateProductRequest extends FormRequest
             'stock_quantity' => ['sometimes', 'integer', 'min:0', 'max:999999'],
             'status' => ['sometimes', 'string', 'in:draft,active,archived'],
             'brand' => ['nullable', 'string', 'max:255'],
+            'gender' => ['nullable', 'string', 'in:men,women,unisex'],
             'weight' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
             'images' => ['nullable', 'array', 'max:10'],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],

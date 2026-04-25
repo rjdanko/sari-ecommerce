@@ -24,6 +24,7 @@ class StoreProductRequest extends FormRequest
             'stock_quantity' => ['required', 'integer', 'min:0', 'max:999999'],
             'low_stock_threshold' => ['nullable', 'integer', 'min:0', 'max:999999'],
             'brand' => ['nullable', 'string', 'max:255'],
+            'gender' => ['nullable', 'string', 'in:men,women,unisex'],
             'weight' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
             'attributes' => ['nullable', 'array'],
             'attributes.*' => ['string', 'max:255'],
