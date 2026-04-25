@@ -132,4 +132,31 @@ class BecomeSellerTest extends TestCase
         $response->assertStatus(201);
         $this->assertTrue($user->fresh()->hasRole(RoleEnum::BUSINESS->value));
     }
+
+    #[Test]
+    public function if_store_creation_fails_the_role_is_not_assigned(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole(RoleEnum::USER->value);
+
+        $threw = false;
+        \Illuminate\Support\Facades\DB::listen(function ($query) use (&$threw) {
+            if (!$threw && str_contains($query->sql, 'insert into "stores"')) {
+                $threw = true;
+                throw new \RuntimeException('Simulated DB failure');
+            }
+        });
+
+        try {
+            $this->actingAs($user)->postJson('/api/user/become-seller', [
+                'name' => 'Failing Store',
+            ]);
+        } catch (\Throwable $e) {
+            // expected — controller rethrows after cleanup
+        }
+
+        // Role must NOT have been assigned because the transaction rolled back
+        $this->assertFalse($user->fresh()->hasRole(RoleEnum::BUSINESS->value));
+        $this->assertDatabaseMissing('stores', ['user_id' => $user->id]);
+    }
 }
