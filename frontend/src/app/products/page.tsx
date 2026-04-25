@@ -24,6 +24,7 @@ function ProductsPageContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
+  const [activeGender, setActiveGender] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
   const [compareIds, setCompareIds] = useState<Set<number>>(new Set());
@@ -46,6 +47,7 @@ function ProductsPageContent() {
         sort: sortBy,
       };
       if (activeCategory !== 'all') params.category = activeCategory;
+      if (activeGender) params.gender = activeGender;
 
       const q = searchParams.get('q');
       if (q) params.search = q;
@@ -68,7 +70,7 @@ function ProductsPageContent() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [activeCategory, sortBy, searchParams]);
+  }, [activeCategory, activeGender, sortBy, searchParams]);
 
   // Re-fetch when filters change
   useEffect(() => {
@@ -175,6 +177,8 @@ function ProductsPageContent() {
             <SidebarFilter
               activeCategory={activeCategory}
               onCategoryChange={setActiveCategory}
+              activeGender={activeGender}
+              onGenderChange={setActiveGender}
               sortBy={sortBy}
               onSortChange={setSortBy}
               priceRange={priceRange}
