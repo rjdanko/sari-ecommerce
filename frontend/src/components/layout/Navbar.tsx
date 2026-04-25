@@ -37,7 +37,7 @@ function NavbarInner() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100/60 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+    <nav className="sticky top-0 z-50 bg-amber-50/90 backdrop-blur-xl border-b border-amber-100/60 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -125,6 +125,11 @@ function NavbarInner() {
                     My Orders
                   </Link>
                   {/* UI-only role check — backend enforces actual access */}
+                  {hasRole('user') && !hasRole('business') && !hasRole('admin') && (
+                    <Link href="/become-seller" className="flex items-center px-4 py-2.5 text-sm text-sari-700 hover:bg-sari-50 font-medium transition-colors">
+                      Sell on SARI
+                    </Link>
+                  )}
                   {hasRole('business') && (
                     <Link href="/business/dashboard" className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                       Business Dashboard
@@ -161,7 +166,7 @@ function NavbarInner() {
 
       {/* Mobile Nav */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white/95 backdrop-blur-lg px-4 py-4 space-y-1 animate-slide-down">
+        <div className="md:hidden border-t border-amber-100 bg-amber-50/95 backdrop-blur-lg px-4 py-4 space-y-1 animate-slide-down">
           {/* Mobile Search */}
           <form onSubmit={handleSearch} className="relative mb-3">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
