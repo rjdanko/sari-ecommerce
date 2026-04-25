@@ -7,6 +7,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // SQLite does not support ALTER TABLE ... DROP/ADD CONSTRAINT; skip in test environments.
         if (DB::getDriverName() !== 'sqlite') {
             DB::statement('ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check');
 

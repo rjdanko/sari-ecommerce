@@ -19,44 +19,64 @@ class BecomeSellerController extends Controller
     {
         $user = $request->user();
 
-        if ($user->hasRole(RoleEnum::BUSINESS->value) || $user->hasRole(RoleEnum::ADMIN->value)) {
-            return response()->json([
-                'message' => 'Your account is already a seller account.',
-            ], 422);
-        }
+        $uploadedPaths = [];
 
-        if ($user->store) {
-            return response()->json([
-                'message' => 'A store already exists for this account.',
-            ], 422);
-        }
+        try {
+            $store = DB::transaction(function () use ($request, $user, &$uploadedPaths) {
+                // Guards inside transaction to prevent race conditions
+                if ($user->hasRole(RoleEnum::BUSINESS->value) || $user->hasRole(RoleEnum::ADMIN->value)) {
+                    throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                        response()->json(['message' => 'Your account is already a seller account.'], 422)
+                    );
+                }
 
-        $store = DB::transaction(function () use ($request, $user) {
-            $data = [
-                'user_id'     => $user->id,
-                'name'        => $request->name,
-                'slug'        => Str::slug($request->name) . '-' . Str::random(5),
-                'description' => $request->description,
-                'address'     => $request->address,
-                'phone'       => $request->phone,
-                'latitude'    => $request->latitude,
-                'longitude'   => $request->longitude,
-            ];
+                if ($user->store()->lockForUpdate()->exists()) {
+                    throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                        response()->json(['message' => 'A store already exists for this account.'], 422)
+                    );
+                }
 
-            if ($request->hasFile('logo')) {
-                $data['logo_url'] = $this->imageService->upload($request->file('logo'));
+                $data = [
+                    'user_id'     => $user->id,
+                    'name'        => $request->name,
+                    'slug'        => Str::slug($request->name) . '-' . Str::random(5),
+                    'description' => $request->description,
+                    'address'     => $request->address,
+                    'phone'       => $request->phone,
+                    'latitude'    => $request->latitude,
+                    'longitude'   => $request->longitude,
+                ];
+
+                if ($request->hasFile('logo')) {
+                    $path = $this->imageService->upload($request->file('logo'), 'stores');
+                    $uploadedPaths[] = $path;
+                    $data['logo_url'] = $path;
+                }
+
+                if ($request->hasFile('banner')) {
+                    $path = $this->imageService->upload($request->file('banner'), 'stores');
+                    $uploadedPaths[] = $path;
+                    $data['banner_url'] = $path;
+                }
+
+                $store = Store::create($data);
+                $user->syncRoles([RoleEnum::BUSINESS->value]);
+
+                return $store;
+            });
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            // Clean up any uploaded files if the transaction failed
+            foreach ($uploadedPaths as $path) {
+                try {
+                    $this->imageService->delete($path);
+                } catch (\Throwable) {
+                    // best effort
+                }
             }
-
-            if ($request->hasFile('banner')) {
-                $data['banner_url'] = $this->imageService->upload($request->file('banner'));
-            }
-
-            $store = Store::create($data);
-
-            $user->syncRoles([RoleEnum::BUSINESS->value]);
-
-            return $store;
-        });
+            throw $e;
+        }
 
         Log::info('User converted to seller', [
             'user_id'  => $user->id,
