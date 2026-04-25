@@ -143,8 +143,8 @@ export default function ProfilePage() {
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10">
-            {/* Left Column — Profile Card */}
-            <div className="lg:col-span-1">
+            {/* Left Column — Profile Card + Become a Seller */}
+            <div className="lg:col-span-1 space-y-6">
               <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-6 flex flex-col items-center text-center">
                 <div className="w-20 h-20 rounded-full bg-sari-50 flex items-center justify-center mb-4">
                   <User className="w-10 h-10 text-sari-500" strokeWidth={1.5} />
@@ -157,6 +157,38 @@ export default function ProfilePage() {
                   {roleLabel}
                 </span>
               </div>
+
+              {isBuyerOnly && (
+                <div className="rounded-2xl border border-sari-100 bg-gradient-to-br from-sari-50 via-white to-white shadow-sm p-6 relative overflow-hidden">
+                  <div
+                    className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                    style={{
+                      backgroundImage: 'radial-gradient(circle, #92400E 1px, transparent 1px)',
+                      backgroundSize: '20px 20px',
+                    }}
+                  />
+                  <div className="relative flex items-start gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sari-500 to-sari-600 flex items-center justify-center shrink-0 shadow-md shadow-sari-500/30">
+                      <Store className="w-5 h-5 text-white" strokeWidth={2} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-display text-lg font-semibold text-gray-900">
+                        Start selling on SARI
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1 max-w-md">
+                        Turn your account into a shop — list products, manage orders, and grow your business.
+                      </p>
+                      <Link
+                        href="/become-seller"
+                        className="inline-flex items-center gap-1.5 mt-4 bg-gradient-to-r from-sari-500 to-sari-600 hover:from-sari-600 hover:to-sari-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-md shadow-sari-500/20 hover:shadow-lg transition-all text-sm"
+                      >
+                        Become a Seller
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Right Column — Info Cards */}
@@ -445,37 +477,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {isBuyerOnly && (
-              <div className="rounded-2xl border border-sari-100 bg-gradient-to-br from-sari-50 via-white to-white shadow-sm p-6 relative overflow-hidden">
-                <div
-                  className="absolute inset-0 opacity-[0.04] pointer-events-none"
-                  style={{
-                    backgroundImage: 'radial-gradient(circle, #92400E 1px, transparent 1px)',
-                    backgroundSize: '20px 20px',
-                  }}
-                />
-                <div className="relative flex items-start gap-4">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sari-500 to-sari-600 flex items-center justify-center shrink-0 shadow-md shadow-sari-500/30">
-                    <Store className="w-5 h-5 text-white" strokeWidth={2} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-display text-lg font-semibold text-gray-900">
-                      Start selling on SARI
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1 max-w-md">
-                      Turn your account into a shop — list products, manage orders, and grow your business.
-                    </p>
-                    <Link
-                      href="/become-seller"
-                      className="inline-flex items-center gap-1.5 mt-4 bg-gradient-to-r from-sari-500 to-sari-600 hover:from-sari-600 hover:to-sari-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-md shadow-sari-500/20 hover:shadow-lg transition-all text-sm"
-                    >
-                      Become a Seller
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </main>

@@ -4,11 +4,15 @@ import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import ProductCard from '@/components/ProductCard';
+import type { VariantModalPayload } from '@/components/ProductCard';
 import SidebarFilter from '@/components/SidebarFilter';
 import ProductComparisonModal from '@/components/ProductComparisonModal';
+import VariantSelectorModal from '@/components/cart/VariantSelectorModal';
 import { SlidersHorizontal, LayoutGrid, Rows3, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/api';
+import { useCartContext } from '@/contexts/CartContext';
+import { useToast } from '@/contexts/ToastContext';
 import type { Product } from '@/types/product';
 
 // ── Page Component ──────────────────────────────────────────
@@ -21,9 +25,13 @@ export default function ProductsPage() {
 }
 
 function ProductsPageContent() {
+  const searchParams = useSearchParams();
+  const { addItem } = useCartContext();
+  const { addToast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState('all');
+  // Initialize from URL immediately so the first fetch uses the correct category.
+  const [activeCategory, setActiveCategory] = useState(() => searchParams.get('category') ?? 'all');
   const [activeGender, setActiveGender] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
@@ -34,7 +42,7 @@ function ProductsPageContent() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const searchParams = useSearchParams();
+  const [variantModal, setVariantModal] = useState<VariantModalPayload | null>(null);
 
   const fetchProducts = useCallback(async (pageNum = 1, append = false) => {
     if (pageNum === 1) setLoading(true);
@@ -76,12 +84,6 @@ function ProductsPageContent() {
   useEffect(() => {
     fetchProducts(1);
   }, [fetchProducts]);
-
-  // Handle ?category= from URL
-  useEffect(() => {
-    const cat = searchParams.get('category');
-    if (cat) setActiveCategory(cat);
-  }, [searchParams]);
 
   // Handle ?ai=compare query param
   useEffect(() => {
@@ -303,6 +305,7 @@ function ProductsPageContent() {
                           product={product}
                           onCompareToggle={handleCompareToggle}
                           isComparing={compareIds.has(product.id)}
+                          onOpenVariantModal={setVariantModal}
                         />
                       </div>
                     ))}
@@ -343,6 +346,7 @@ function ProductsPageContent() {
                   <button
                     onClick={() => {
                       setActiveCategory('all');
+                      setActiveGender('');
                       setPriceRange([0, 10000]);
                     }}
                     className="mt-5 text-sm font-medium text-sari-600 hover:text-sari-700 transition-colors"
@@ -363,6 +367,26 @@ function ProductsPageContent() {
           onClose={() => setComparisonOpen(false)}
         />
       )}
+
+      {/* Shared variant selector — rendered at page level so it covers all cards */}
+      <VariantSelectorModal
+        isOpen={variantModal !== null}
+        productName={variantModal?.productName ?? ''}
+        productImage={variantModal?.productImage ?? null}
+        basePrice={variantModal?.basePrice ?? 0}
+        variants={variantModal?.variants ?? []}
+        onClose={() => setVariantModal(null)}
+        onAddToCart={async (variantId) => {
+          if (!variantModal) return;
+          await addItem(variantModal.productId, 1, variantId);
+          addToast({
+            type: 'success',
+            title: 'Added to cart',
+            message: variantModal.productName,
+            action: { label: 'View Cart', href: '/cart' },
+          });
+        }}
+      />
     </>
   );
 }

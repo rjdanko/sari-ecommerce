@@ -4,13 +4,20 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import ProductCard from '@/components/ProductCard';
+import type { VariantModalPayload } from '@/components/ProductCard';
+import VariantSelectorModal from '@/components/cart/VariantSelectorModal';
 import { Heart, ShoppingBag, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
+import { useCartContext } from '@/contexts/CartContext';
+import { useToast } from '@/contexts/ToastContext';
 import type { Product } from '@/types/product';
 
 export default function WishlistPage() {
+  const { addItem } = useCartContext();
+  const { addToast } = useToast();
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [variantModal, setVariantModal] = useState<VariantModalPayload | null>(null);
 
   const fetchWishlist = useCallback(async () => {
     try {
@@ -40,9 +47,26 @@ export default function WishlistPage() {
     }
   };
 
+  const handleAddToCart = async (variantId: number) => {
+    if (!variantModal) return;
+    await addItem(variantModal.productId, variantId, 1);
+    addToast({ type: 'success', title: 'Added to cart', message: variantModal.productName });
+  };
+
   return (
     <>
       <Navbar />
+      {variantModal && (
+        <VariantSelectorModal
+          isOpen={!!variantModal}
+          productName={variantModal.productName}
+          productImage={variantModal.productImage}
+          basePrice={variantModal.basePrice}
+          variants={variantModal.variants}
+          onClose={() => setVariantModal(null)}
+          onAddToCart={handleAddToCart}
+        />
+      )}
       <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
         {/* Page Header */}
         <div className="relative overflow-hidden bg-gradient-to-r from-sari-50 via-white to-sari-50 border-b border-gray-100">
@@ -104,7 +128,7 @@ export default function WishlistPage() {
                     className="relative animate-fade-in"
                     style={{ animationDelay: `${i * 50}ms` }}
                   >
-                    <ProductCard product={product} />
+                    <ProductCard product={product} onOpenVariantModal={setVariantModal} />
                     <button
                       onClick={() => removeFromWishlist(product.id)}
                       className="absolute top-3 right-3 z-20 p-2 rounded-full bg-red-50 text-red-500 shadow-md hover:bg-red-100 transition-colors duration-200"

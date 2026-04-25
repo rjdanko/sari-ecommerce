@@ -54,6 +54,7 @@ class ProductResource extends JsonResource
             'low_stock_threshold' => $this->low_stock_threshold,
             'status' => $this->status,
             'brand' => $this->brand,
+            'gender' => $this->gender,
             'is_featured' => $this->is_featured,
             'view_count' => $this->view_count,
             'average_rating' => (float) ($this->average_rating ?? 0),

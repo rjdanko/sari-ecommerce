@@ -4,13 +4,11 @@ import { memo, useState } from 'react';
 import Link from 'next/link';
 import { Heart, ShoppingCart, Star, Loader2 } from 'lucide-react';
 import { cn, formatPrice } from '@/lib/utils';
-import { useCartContext } from '@/contexts/CartContext';
 import { useToast } from '@/contexts/ToastContext';
 import type { Product } from '@/types/product';
 import api from '@/lib/api';
-import VariantSelectorModal from '@/components/cart/VariantSelectorModal';
 
-interface ProductVariant {
+export interface ProductVariant {
   id: number;
   name: string;
   price: number;
@@ -19,23 +17,29 @@ interface ProductVariant {
   is_active: boolean;
 }
 
+export interface VariantModalPayload {
+  productId: number;
+  productName: string;
+  productImage: string | null;
+  basePrice: number;
+  variants: ProductVariant[];
+}
+
 interface ProductCardProps {
   product: Product;
   onCompareToggle?: (productId: number, checked: boolean) => void;
   isComparing?: boolean;
+  onOpenVariantModal: (payload: VariantModalPayload) => void;
 }
 
 function ProductCard({
   product,
   onCompareToggle,
   isComparing = false,
+  onOpenVariantModal,
 }: ProductCardProps) {
-  const { addItem } = useCartContext();
   const { addToast } = useToast();
   const [wishlisted, setWishlisted] = useState(false);
-  const [addingToCart, setAddingToCart] = useState(false);
-  const [variantModalOpen, setVariantModalOpen] = useState(false);
-  const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [loadingVariants, setLoadingVariants] = useState(false);
 
   const hasRealImage = !!product.primary_image?.url;
@@ -48,7 +52,6 @@ function ProductCard({
   const [imageLoaded, setImageLoaded] = useState(!hasRealImage);
   const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
 
-  // Determine current image URL based on what's failed
   const imageUrl = (() => {
     if (primaryUrl && !failedUrls.has(primaryUrl)) return primaryUrl;
     if (proxyUrl && !failedUrls.has(proxyUrl)) return proxyUrl;
@@ -62,6 +65,7 @@ function ProductCard({
       return next;
     });
   };
+
   const rating = product.average_rating ?? 0;
   const reviewCount = product.review_count ?? 0;
 
@@ -74,11 +78,38 @@ function ProductCard({
         )
       : null;
 
+  const handleCartClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (loadingVariants) return;
+
+    setLoadingVariants(true);
+    try {
+      const { data } = await api.get(`/api/products/${product.slug}`);
+      const productVariants: ProductVariant[] = data.variants ?? [];
+      const activeVariants = productVariants.filter((v) => v.is_active && v.stock_quantity > 0);
+
+      onOpenVariantModal({
+        productId: product.id,
+        productName: product.name,
+        productImage: primaryUrl ?? proxyUrl,
+        basePrice: product.base_price,
+        variants: activeVariants,
+      });
+    } catch {
+      addToast({
+        type: 'error',
+        title: 'Could not load product',
+        message: 'Please try again.',
+      });
+    } finally {
+      setLoadingVariants(false);
+    }
+  };
+
   return (
     <div className="group relative bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg hover:shadow-sari-200/30 hover:border-sari-200/60 transition-all duration-300">
       {/* Image container */}
       <div className="relative aspect-[4/5] bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-        {/* Product image */}
         <img
           src={imageUrl}
           alt={product.primary_image?.alt_text ?? product.name}
@@ -100,7 +131,6 @@ function ProductCard({
           onError={handleImageError}
         />
 
-        {/* Subtle gradient overlay on hover for contrast */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         {/* Compare pill — top left */}
@@ -171,19 +201,16 @@ function ProductCard({
 
       {/* Content */}
       <div className="p-4">
-        {/* Category tag */}
         <span className="text-[11px] font-medium text-sari-600 tracking-wide uppercase">
           {product.category?.name ?? 'Uncategorized'}
         </span>
 
-        {/* Product name */}
         <Link href={`/products/${product.slug}`} className="block mt-1">
           <h3 className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-sari-700 transition-colors duration-200">
             {product.name}
           </h3>
         </Link>
 
-        {/* Star rating */}
         <div className="flex items-center gap-1.5 mt-2">
           <div className="flex items-center gap-0.5">
             {[1, 2, 3, 4, 5].map((star) => (
@@ -217,53 +244,12 @@ function ProductCard({
               )}
           </div>
           <button
-            onClick={async (e) => {
-              e.preventDefault();
-              if (addingToCart || loadingVariants) return;
-
-              // Fetch variants for this product on first click
-              setLoadingVariants(true);
-              try {
-                const { data } = await api.get(`/api/products/${product.slug}`);
-                const productVariants: ProductVariant[] = data.variants ?? [];
-                const activeVariants = productVariants.filter((v) => v.is_active && v.stock_quantity > 0);
-
-                if (activeVariants.length > 0) {
-                  setVariants(activeVariants);
-                  setVariantModalOpen(true);
-                  return; // don't add yet — wait for user to pick
-                }
-              } catch {
-                // If fetch fails, fall through to add without variant
-              } finally {
-                setLoadingVariants(false);
-              }
-
-              // No variants or fetch failed — add directly
-              setAddingToCart(true);
-              try {
-                await addItem(product.id);
-                addToast({
-                  type: 'success',
-                  title: 'Added to cart',
-                  message: product.name,
-                  action: { label: 'View Cart', href: '/cart' },
-                });
-              } catch {
-                addToast({
-                  type: 'error',
-                  title: 'Could not add to cart',
-                  message: 'Please log in or try again.',
-                });
-              } finally {
-                setAddingToCart(false);
-              }
-            }}
-            disabled={addingToCart || loadingVariants}
+            onClick={handleCartClick}
+            disabled={loadingVariants}
             className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-sari-400 to-sari-600 text-white shadow-sm hover:shadow-md hover:shadow-sari-400/30 hover:from-sari-500 hover:to-sari-700 active:scale-95 transition-all duration-200 disabled:opacity-60"
             aria-label="Add to cart"
           >
-            {(addingToCart || loadingVariants) ? (
+            {loadingVariants ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <ShoppingCart className="w-4 h-4" />
@@ -271,24 +257,6 @@ function ProductCard({
           </button>
         </div>
       </div>
-
-      <VariantSelectorModal
-        isOpen={variantModalOpen}
-        productName={product.name}
-        productImage={primaryUrl ?? proxyUrl}
-        basePrice={product.base_price}
-        variants={variants}
-        onClose={() => setVariantModalOpen(false)}
-        onAddToCart={async (variantId) => {
-          await addItem(product.id, 1, variantId);
-          addToast({
-            type: 'success',
-            title: 'Added to cart',
-            message: product.name,
-            action: { label: 'View Cart', href: '/cart' },
-          });
-        }}
-      />
     </div>
   );
 }

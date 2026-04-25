@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Models\Wishlist;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +21,21 @@ class WishlistController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        return response()->json($wishlist);
+        $data = $wishlist->getCollection()->map(fn ($item) => [
+            'id' => $item->id,
+            'product' => $item->product ? new ProductResource($item->product) : null,
+            'created_at' => $item->created_at,
+        ]);
+
+        return response()->json([
+            'data' => $data,
+            'meta' => [
+                'current_page' => $wishlist->currentPage(),
+                'last_page' => $wishlist->lastPage(),
+                'per_page' => $wishlist->perPage(),
+                'total' => $wishlist->total(),
+            ],
+        ]);
     }
 
     /**

@@ -188,10 +188,10 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
             value={role}
             onChange={e => setRole(e.target.value)}
             disabled={isSelf}
-            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400 disabled:opacity-50"
+            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400 disabled:opacity-50"
           >
-            <option value="user">User</option>
-            <option value="business">Business</option>
+            <option value="user" className="text-gray-900 bg-white">User</option>
+            <option value="business" className="text-gray-900 bg-white">Business</option>
           </select>
           <button
             onClick={saveRole}

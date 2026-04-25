@@ -194,7 +194,14 @@ class ProductController extends Controller
 
             // Handle option categories update
             if ($request->has('option_categories')) {
-                $product->variants()->delete();
+                // Only delete variants not referenced by any order item to avoid FK violations.
+                $product->variants()
+                    ->whereNotIn('id', function ($q) {
+                        $q->select('product_variant_id')
+                          ->from('order_items')
+                          ->whereNotNull('product_variant_id');
+                    })
+                    ->delete();
                 $categories = $request->option_categories;
                 if (!empty($categories)) {
                     $combinations = $this->generateCombinations($categories);
