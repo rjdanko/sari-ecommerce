@@ -35,6 +35,7 @@ interface OrderUser {
 }
 
 interface Order {
+  id: number;
   order_number: string;
   status: string;
   total: number;
@@ -321,9 +322,10 @@ export default function BusinessDashboardPage() {
                   </div>
                 )
                 : recentOrders.map((order) => (
-                    <div
+                    <Link
                       key={order.order_number}
-                      className="flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-gray-50/50"
+                      href={`/business/orders/${order.id}`}
+                      className="flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-gray-50/50 cursor-pointer"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -354,7 +356,7 @@ export default function BusinessDashboardPage() {
                           {formatTimeAgo(order.created_at)}
                         </p>
                       </div>
-                    </div>
+                    </Link>
                   ))}
           </div>
         </div>
