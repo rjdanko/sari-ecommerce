@@ -53,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (loading || !user || !hasRole('admin')) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-red-700" />
+        <Loader2 className="h-8 w-8 animate-spin text-sari-600" />
       </div>
     );
   }
@@ -77,7 +77,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Menu className="h-5 w-5" />
         </button>
         <span className="font-display text-lg tracking-tight text-gray-900">SARI</span>
-        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-red-700">
+        <span className="rounded-full bg-sari-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-sari-700">
           ADMIN
         </span>
       </div>
@@ -93,13 +93,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-gray-200/80 bg-white shadow-[1px_0_12px_-4px_rgba(127,29,29,0.08)] transition-transform duration-300 lg:z-30 lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-gray-200/80 bg-white shadow-[1px_0_12px_-4px_rgba(180,83,9,0.08)] transition-transform duration-300 lg:z-30 lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         {/* Logo */}
         <div className="flex h-16 items-center gap-2.5 border-b border-gray-100 px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-red-700 to-red-900 shadow-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sari-600 to-sari-700 shadow-sm">
             <ShieldAlert className="h-4 w-4 text-white" strokeWidth={2} />
           </div>
           <div className="flex items-center">
@@ -110,7 +110,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               height={60}
               className="h-10 w-auto object-contain"
             />
-            <span className="ml-2 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-red-700">
+            <span className="ml-2 rounded-full bg-sari-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-sari-700">
               ADMIN
             </span>
           </div>
@@ -154,14 +154,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 className={cn(
                   'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
                   isActive
-                    ? 'bg-gradient-to-r from-red-700 to-red-900 text-white shadow-sm shadow-red-900/20'
-                    : 'text-gray-600 hover:bg-red-50 hover:text-red-800'
+                    ? 'bg-gradient-to-r from-sari-600 to-sari-700 text-white shadow-sm shadow-sari-700/20'
+                    : 'text-gray-600 hover:bg-sari-50 hover:text-sari-800'
                 )}
               >
                 <Icon
                   className={cn(
                     'h-[18px] w-[18px] transition-all duration-200',
-                    isActive ? 'text-white' : 'text-gray-400 group-hover:text-red-700'
+                    isActive ? 'text-white' : 'text-gray-400 group-hover:text-sari-600'
                   )}
                   strokeWidth={isActive ? 2.2 : 1.8}
                 />
@@ -175,8 +175,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* User Footer */}
         <div className="border-t border-gray-100 p-3">
           <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-red-100 to-red-200 ring-2 ring-red-100">
-              <span className="text-xs font-bold text-red-800">{initials}</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-sari-100 to-sari-200 ring-2 ring-sari-100">
+              <span className="text-xs font-bold text-sari-800">{initials}</span>
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="truncate text-sm font-semibold text-gray-900">
