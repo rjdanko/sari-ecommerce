@@ -54,10 +54,11 @@ export default function FAQPage() {
 
         <div className="divide-y divide-gray-100 rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           {faqs.map((faq, i) => (
-            <div key={i}>
+            <div key={faq.q}>
               <button
                 onClick={() => setOpen(open === i ? null : i)}
                 className="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                aria-expanded={open === i}
               >
                 <span className="text-sm font-semibold text-gray-900 pr-4">{faq.q}</span>
                 <ChevronDown

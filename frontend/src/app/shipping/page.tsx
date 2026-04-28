@@ -1,4 +1,5 @@
 import { Truck, Clock, Package, MapPin } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ShippingPage() {
   return (
@@ -78,7 +79,7 @@ export default function ShippingPage() {
             </p>
             <p className="text-sm text-gray-600">
               You can also view your order status anytime from{' '}
-              <a href="/orders" className="font-medium text-sari-600 hover:underline">My Orders</a>.
+              <Link href="/orders" className="font-medium text-sari-600 hover:underline">My Orders</Link>.
             </p>
           </div>
         </div>
