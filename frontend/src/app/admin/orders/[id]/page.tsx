@@ -86,7 +86,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/admin/orders" className="rounded-lg p-2 text-gray-500 hover:bg-gray-100">
+        <Link href="/admin/orders" aria-label="Back to orders" className="rounded-lg p-2 text-gray-500 hover:bg-gray-100">
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div>
@@ -166,6 +166,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
             <h2 className="text-sm font-semibold text-gray-900">Update Status</h2>
             <div className="flex flex-col gap-3">
               <select
+                aria-label="Order status"
                 value={newStatus}
                 onChange={e => setNewStatus(e.target.value)}
                 className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400"
