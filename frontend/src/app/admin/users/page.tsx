@@ -75,13 +75,13 @@ export default function AdminUsersPage() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search name or email…"
-            className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+            className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400"
           />
         </div>
         <select
           value={role}
           onChange={e => { setRole(e.target.value); setPage(1); }}
-          className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+          className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400"
         >
           <option value="all">All roles</option>
           <option value="user">User</option>
@@ -90,7 +90,7 @@ export default function AdminUsersPage() {
         <select
           value={status}
           onChange={e => { setStatus(e.target.value); setPage(1); }}
-          className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+          className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400"
         >
           <option value="all">All statuses</option>
           <option value="active">Active</option>
@@ -102,7 +102,7 @@ export default function AdminUsersPage() {
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-red-700" />
+            <Loader2 className="h-6 w-6 animate-spin text-sari-600" />
           </div>
         ) : (
           <table className="w-full text-sm">
@@ -136,7 +136,7 @@ export default function AdminUsersPage() {
                     <td className="px-5 py-3 text-right">
                       <Link
                         href={`/admin/users/${u.id}`}
-                        className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
+                        className="rounded-lg bg-sari-50 px-3 py-1.5 text-xs font-medium text-sari-700 hover:bg-sari-100 transition-colors"
                       >
                         View
                       </Link>

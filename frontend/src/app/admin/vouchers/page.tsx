@@ -27,8 +27,8 @@ function ConfirmModal({ title, message, confirmLabel, confirmClass, onConfirm, o
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
-          <AlertTriangle className="h-6 w-6 text-red-700" />
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-sari-50">
+          <AlertTriangle className="h-6 w-6 text-sari-600" />
         </div>
         <h3 className="text-base font-semibold text-gray-900">{title}</h3>
         <p className="mt-1 text-sm text-gray-500">{message}</p>
@@ -90,7 +90,7 @@ export default function AdminVouchersPage() {
           <h1 className="text-2xl font-bold text-gray-900">Vouchers</h1>
           <p className="mt-1 text-sm text-gray-500">{result?.total ?? 0} total</p>
         </div>
-        <Link href="/admin/vouchers/new" className="inline-flex items-center gap-2 rounded-xl bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800">
+        <Link href="/admin/vouchers/new" className="inline-flex items-center gap-2 rounded-xl bg-sari-600 px-4 py-2 text-sm font-medium text-white hover:bg-sari-700">
           <Plus className="h-4 w-4" /> Create Voucher
         </Link>
       </div>
@@ -101,7 +101,7 @@ export default function AdminVouchersPage() {
 
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-red-700" /></div>
+          <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-sari-600" /></div>
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-gray-100 bg-gray-50/60">
@@ -136,11 +136,11 @@ export default function AdminVouchersPage() {
                   </td>
                   <td className="px-5 py-3 text-right">
                     <div className="inline-flex gap-2">
-                      <Link href={`/admin/vouchers/${v.id}`} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100">Edit</Link>
+                      <Link href={`/admin/vouchers/${v.id}`} className="rounded-lg bg-sari-50 px-3 py-1.5 text-xs font-medium text-sari-700 hover:bg-sari-100">Edit</Link>
                       <button onClick={() => toggleActive(v)} className="rounded-lg bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100">
                         {v.is_active ? 'Deactivate' : 'Activate'}
                       </button>
-                      <button onClick={() => setDeleteTarget(v)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100">Delete</button>
+                      <button onClick={() => setDeleteTarget(v)} className="rounded-lg bg-sari-50 px-3 py-1.5 text-xs font-medium text-sari-700 hover:bg-sari-100">Delete</button>
                     </div>
                   </td>
                 </tr>
@@ -165,7 +165,7 @@ export default function AdminVouchersPage() {
           title="Delete voucher?"
           message={`Voucher "${deleteTarget.code}" will be permanently deleted. This is only allowed if no claims exist.`}
           confirmLabel="Delete"
-          confirmClass="bg-red-700 hover:bg-red-800"
+          confirmClass="bg-sari-600 hover:bg-sari-700"
           onConfirm={doDelete}
           onCancel={() => setDeleteTarget(null)}
         />

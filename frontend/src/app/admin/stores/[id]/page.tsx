@@ -26,8 +26,8 @@ function ConfirmModal({ title, message, confirmLabel, confirmClass, onConfirm, o
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
-          <AlertTriangle className="h-6 w-6 text-red-700" />
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-sari-50">
+          <AlertTriangle className="h-6 w-6 text-sari-600" />
         </div>
         <h3 className="text-base font-semibold text-gray-900">{title}</h3>
         <p className="mt-1 text-sm text-gray-500">{message}</p>
@@ -75,7 +75,7 @@ export default function AdminStoreDetailPage({ params }: { params: Promise<{ id:
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-red-700" /></div>;
+  if (loading) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-sari-600" /></div>;
   if (!store) return <div className="p-6 text-sm text-gray-500">Store not found.</div>;
 
   return (
@@ -102,7 +102,7 @@ export default function AdminStoreDetailPage({ params }: { params: Promise<{ id:
           <Link
             href={`/stores/${store.slug}`}
             target="_blank"
-            className="flex items-center gap-1 text-xs text-red-700 hover:underline"
+            className="flex items-center gap-1 text-xs text-sari-600 hover:underline"
           >
             View Storefront <ExternalLink className="h-3 w-3" />
           </Link>
@@ -125,7 +125,7 @@ export default function AdminStoreDetailPage({ params }: { params: Promise<{ id:
             <div><dt className="text-gray-500">Name</dt><dd className="font-medium text-gray-900">{store.owner.first_name} {store.owner.last_name}</dd></div>
             <div><dt className="text-gray-500">Email</dt><dd className="font-medium text-gray-900">{store.owner.email}</dd></div>
           </dl>
-          <Link href={`/admin/users/${store.owner.id}`} className="inline-block text-xs text-red-700 hover:underline">
+          <Link href={`/admin/users/${store.owner.id}`} className="inline-block text-xs text-sari-600 hover:underline">
             View user profile →
           </Link>
         </div>
@@ -138,7 +138,7 @@ export default function AdminStoreDetailPage({ params }: { params: Promise<{ id:
           Suspending a store hides all its products from buyer surfaces. The seller retains dashboard access for in-flight orders.
         </p>
         {store.is_active ? (
-          <button onClick={() => setModal('suspend')} disabled={saving} className="rounded-xl bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-40">
+          <button onClick={() => setModal('suspend')} disabled={saving} className="rounded-xl bg-sari-600 px-4 py-2 text-sm font-medium text-white hover:bg-sari-700 disabled:opacity-40">
             Suspend Store
           </button>
         ) : (
@@ -153,7 +153,7 @@ export default function AdminStoreDetailPage({ params }: { params: Promise<{ id:
           title="Suspend store?"
           message={`"${store.name}" and all its products will be hidden from buyers. Existing in-flight orders are not affected.`}
           confirmLabel="Suspend"
-          confirmClass="bg-red-700 hover:bg-red-800"
+          confirmClass="bg-sari-600 hover:bg-sari-700"
           onConfirm={doSuspend}
           onCancel={() => setModal(null)}
         />

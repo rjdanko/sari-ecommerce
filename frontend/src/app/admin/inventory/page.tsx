@@ -66,7 +66,7 @@ export default function AdminInventoryPage() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search products…"
-            className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+            className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400"
           />
         </div>
         <label className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm cursor-pointer">
@@ -77,7 +77,7 @@ export default function AdminInventoryPage() {
 
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-red-700" /></div>
+          <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-sari-600" /></div>
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-gray-100 bg-gray-50/60">
@@ -112,14 +112,14 @@ export default function AdminInventoryPage() {
                       min={0}
                       value={currentQty(p)}
                       onChange={e => setEdits(prev => ({ ...prev, [p.id]: parseInt(e.target.value, 10) || 0 }))}
-                      className="w-24 rounded-lg border border-gray-200 px-2 py-1 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+                      className="w-24 rounded-lg border border-gray-200 px-2 py-1 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400"
                     />
                   </td>
                   <td className="px-5 py-3 text-right">
                     <button
                       onClick={() => save(p)}
                       disabled={edits[p.id] === undefined || saving[p.id]}
-                      className="inline-flex items-center gap-1 rounded-lg bg-red-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-800 disabled:opacity-40 transition-colors"
+                      className="inline-flex items-center gap-1 rounded-lg bg-sari-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sari-700 disabled:opacity-40 transition-colors"
                     >
                       {saving[p.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
                       Save

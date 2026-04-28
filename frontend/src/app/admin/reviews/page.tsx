@@ -21,14 +21,14 @@ function ConfirmModal({ title, message, onConfirm, onCancel }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
-          <AlertTriangle className="h-6 w-6 text-red-700" />
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-sari-50">
+          <AlertTriangle className="h-6 w-6 text-sari-600" />
         </div>
         <h3 className="text-base font-semibold text-gray-900">{title}</h3>
         <p className="mt-1 text-sm text-gray-500">{message}</p>
         <div className="mt-5 flex gap-3">
           <button onClick={onCancel} className="flex-1 rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-          <button onClick={onConfirm} className="flex-1 rounded-xl bg-red-700 py-2 text-sm font-medium text-white hover:bg-red-800">Delete</button>
+          <button onClick={onConfirm} className="flex-1 rounded-xl bg-sari-600 py-2 text-sm font-medium text-white hover:bg-sari-700">Delete</button>
         </div>
       </div>
     </div>
@@ -97,13 +97,13 @@ export default function AdminReviewsPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search product or reviewer…"
-            className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+            className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400"
           />
         </div>
         <select
           value={rating}
           onChange={e => { setRating(e.target.value); setPage(1); }}
-          className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+          className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400"
         >
           <option value="">All ratings</option>
           {[5,4,3,2,1].map(r => <option key={r} value={r}>{r} star{r !== 1 ? 's' : ''}</option>)}
@@ -112,7 +112,7 @@ export default function AdminReviewsPage() {
 
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-red-700" /></div>
+          <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-sari-600" /></div>
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-gray-100 bg-gray-50/60">
@@ -145,7 +145,7 @@ export default function AdminReviewsPage() {
                   <td className="px-5 py-3 text-right">
                     <button
                       onClick={() => setDeleteTarget(r)}
-                      className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
+                      className="rounded-lg bg-sari-50 px-3 py-1.5 text-xs font-medium text-sari-700 hover:bg-sari-100 transition-colors"
                     >
                       Delete
                     </button>

@@ -23,7 +23,7 @@ interface Paginated<T> { data: T[]; current_page: number; last_page: number; tot
 const statusStyles: Record<string, string> = {
   active: 'bg-emerald-50 text-emerald-700',
   draft: 'bg-gray-100 text-gray-600',
-  archived: 'bg-red-50 text-red-700',
+  archived: 'bg-sari-50 text-sari-700',
 };
 
 function stockColor(qty: number) {
@@ -70,16 +70,16 @@ export default function AdminProductsPage() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search products…"
-            className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+            className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400"
           />
         </div>
-        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400">
+        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400">
           <option value="all">All statuses</option>
           <option value="active">Active</option>
           <option value="draft">Draft</option>
           <option value="archived">Archived</option>
         </select>
-        <select value={gender} onChange={e => { setGender(e.target.value); setPage(1); }} className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400">
+        <select value={gender} onChange={e => { setGender(e.target.value); setPage(1); }} className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400">
           <option value="all">All genders</option>
           <option value="men">Men</option>
           <option value="women">Women</option>
@@ -93,7 +93,7 @@ export default function AdminProductsPage() {
 
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-red-700" /></div>
+          <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-sari-600" /></div>
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-gray-100 bg-gray-50/60">
@@ -132,7 +132,7 @@ export default function AdminProductsPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3 text-right">
-                    <Link href={`/admin/products/${p.id}`} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors">
+                    <Link href={`/admin/products/${p.id}`} className="rounded-lg bg-sari-50 px-3 py-1.5 text-xs font-medium text-sari-700 hover:bg-sari-100 transition-colors">
                       Edit
                     </Link>
                   </td>

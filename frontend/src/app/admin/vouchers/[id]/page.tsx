@@ -78,7 +78,7 @@ export default function AdminVoucherEditPage({ params }: { params: Promise<{ id:
     } finally { setSaving(false); }
   };
 
-  if (loading || !form) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-red-700" /></div>;
+  if (loading || !form) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-sari-600" /></div>;
 
   return (
     <div className="p-6 space-y-6 max-w-xl">
@@ -94,17 +94,17 @@ export default function AdminVoucherEditPage({ params }: { params: Promise<{ id:
           <div className="col-span-2">
             <label className="mb-1 block text-xs font-medium text-gray-600">Code *</label>
             <input required value={form.code} onChange={e => set('code', e.target.value.toUpperCase())}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono uppercase focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400" />
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono uppercase focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400" />
           </div>
           <div className="col-span-2">
             <label className="mb-1 block text-xs font-medium text-gray-600">Name *</label>
             <input required value={form.name} onChange={e => set('name', e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400" />
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">Type</label>
             <select value={form.type} onChange={e => set('type', e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400">
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400">
               <option value="daily">Daily</option>
               <option value="special">Special</option>
             </select>
@@ -112,7 +112,7 @@ export default function AdminVoucherEditPage({ params }: { params: Promise<{ id:
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">Discount Type</label>
             <select value={form.discount_type} onChange={e => set('discount_type', e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400">
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400">
               <option value="fixed">Fixed (₱)</option>
               <option value="percentage">Percentage (%)</option>
               <option value="free_shipping">Free Shipping</option>
@@ -122,41 +122,41 @@ export default function AdminVoucherEditPage({ params }: { params: Promise<{ id:
             <div>
               <label className="mb-1 block text-xs font-medium text-gray-600">Discount Value</label>
               <input type="number" min="0" step="0.01" value={form.discount_value} onChange={e => set('discount_value', e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400" />
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400" />
             </div>
           )}
           {form.discount_type === 'percentage' && (
             <div>
               <label className="mb-1 block text-xs font-medium text-gray-600">Max Discount Cap (₱)</label>
               <input type="number" min="0" step="0.01" value={form.max_discount} onChange={e => set('max_discount', e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400" />
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400" />
             </div>
           )}
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">Min Spend (₱)</label>
             <input type="number" min="0" step="0.01" value={form.min_spend} onChange={e => set('min_spend', e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400" />
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">Max Claims</label>
             <input type="number" min="1" value={form.total_quantity} onChange={e => set('total_quantity', e.target.value)}
               placeholder="Unlimited"
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400" />
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">Max per User</label>
             <input type="number" min="1" value={form.max_claims_per_user} onChange={e => set('max_claims_per_user', e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400" />
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">Starts At</label>
             <input type="datetime-local" value={form.starts_at} onChange={e => set('starts_at', e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400" />
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">Expires At</label>
             <input type="datetime-local" value={form.expires_at} onChange={e => set('expires_at', e.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400" />
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400" />
           </div>
           <div className="col-span-2">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -166,7 +166,7 @@ export default function AdminVoucherEditPage({ params }: { params: Promise<{ id:
           </div>
         </div>
 
-        <button type="submit" disabled={saving} className="w-full rounded-xl bg-red-700 py-2.5 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-40 flex items-center justify-center gap-2">
+        <button type="submit" disabled={saving} className="w-full rounded-xl bg-sari-600 py-2.5 text-sm font-medium text-white hover:bg-sari-700 disabled:opacity-40 flex items-center justify-center gap-2">
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
           Save Changes
         </button>

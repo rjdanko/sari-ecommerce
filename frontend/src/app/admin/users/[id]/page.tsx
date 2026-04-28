@@ -36,8 +36,8 @@ function ConfirmModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
-          <AlertTriangle className="h-6 w-6 text-red-700" />
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-sari-50">
+          <AlertTriangle className="h-6 w-6 text-sari-600" />
         </div>
         <h3 className="text-base font-semibold text-gray-900">{title}</h3>
         <p className="mt-1 text-sm text-gray-500">{message}</p>
@@ -125,7 +125,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-red-700" />
+        <Loader2 className="h-8 w-8 animate-spin text-sari-600" />
       </div>
     );
   }
@@ -188,7 +188,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
             value={role}
             onChange={e => setRole(e.target.value)}
             disabled={isSelf}
-            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400 disabled:opacity-50"
+            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-sari-400 focus:outline-none focus:ring-1 focus:ring-sari-400 disabled:opacity-50"
           >
             <option value="user" className="text-gray-900 bg-white">User</option>
             <option value="business" className="text-gray-900 bg-white">Business</option>
@@ -196,7 +196,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
           <button
             onClick={saveRole}
             disabled={saving || isSelf || role === (user.roles?.[0]?.name ?? 'user')}
-            className="rounded-xl bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-40 transition-colors"
+            className="rounded-xl bg-sari-600 px-4 py-2 text-sm font-medium text-white hover:bg-sari-700 disabled:opacity-40 transition-colors"
           >
             {saving ? 'Saving…' : 'Save Role'}
           </button>
@@ -221,7 +221,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
           <button
             onClick={() => setModal('suspend')}
             disabled={saving}
-            className="rounded-xl bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-40"
+            className="rounded-xl bg-sari-600 px-4 py-2 text-sm font-medium text-white hover:bg-sari-700 disabled:opacity-40"
           >
             Suspend Account
           </button>
@@ -233,7 +233,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
           title="Suspend account?"
           message={`${user.first_name} ${user.last_name} will be logged out immediately and unable to log in again until unsuspended.`}
           confirmLabel="Suspend"
-          confirmClass="bg-red-700 hover:bg-red-800"
+          confirmClass="bg-sari-600 hover:bg-sari-700"
           onConfirm={doSuspend}
           onCancel={() => setModal(null)}
         />

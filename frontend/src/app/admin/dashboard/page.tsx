@@ -36,7 +36,7 @@ const tiles = [
   { key: 'stores' as const, label: 'Total Stores', icon: Store, color: 'from-violet-500 to-violet-600' },
   { key: 'products' as const, label: 'Active Products', icon: Package, color: 'from-emerald-500 to-emerald-600' },
   { key: 'orders' as const, label: 'Total Orders', icon: ShoppingCart, color: 'from-amber-500 to-amber-600' },
-  { key: 'revenue' as const, label: 'Total Revenue', icon: DollarSign, color: 'from-red-700 to-red-900', isCurrency: true },
+  { key: 'revenue' as const, label: 'Total Revenue', icon: DollarSign, color: 'from-sari-600 to-sari-700', isCurrency: true },
 ];
 
 export default function AdminDashboardPage() {
@@ -53,7 +53,7 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-red-700" />
+        <Loader2 className="h-8 w-8 animate-spin text-sari-600" />
       </div>
     );
   }
@@ -155,7 +155,7 @@ export default function AdminDashboardPage() {
             ) : (
               data.recentUsers.map((u) => (
                 <div key={u.id} className="flex items-center gap-3 px-6 py-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-xs font-bold text-red-700">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sari-50 text-xs font-bold text-sari-700">
                     {u.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
