@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  DollarSign,
+  Banknote,
   ShoppingCart,
   Package,
   AlertTriangle,
@@ -49,7 +49,7 @@ function buildMetrics(data: DashboardData) {
     {
       label: 'Revenue',
       value: formatPrice(data.revenue),
-      icon: DollarSign,
+      icon: Banknote,
       accent: 'from-emerald-500 to-emerald-600',
       bgAccent: 'bg-emerald-50',
       textAccent: 'text-emerald-700',
