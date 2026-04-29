@@ -107,6 +107,22 @@ function CheckoutContent() {
     }
   }, [isDirect, directSlug, directProductId, fetchCart]);
 
+  // Restore shipping draft saved before payment redirect
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('checkout_shipping_draft');
+      if (!raw) return;
+      const draft = JSON.parse(raw) as {
+        form: typeof form;
+        paymentMethod: PaymentMethod;
+      };
+      if (draft.form) setForm(draft.form);
+      if (draft.paymentMethod) setPaymentMethod(draft.paymentMethod);
+    } catch {
+      // Ignore malformed draft
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Build display items — either direct product or cart items
   const directVariant = isDirect && directProduct && directVariantId
     ? directProduct.variants?.find((v: any) => v.id === parseInt(directVariantId))
@@ -255,13 +271,24 @@ function CheckoutContent() {
 
       const { data } = await api.post('/api/checkout', payload);
 
+      // Save draft so form can be restored if payment is cancelled
+      const draft = { form, paymentMethod };
+      try {
+        sessionStorage.setItem('checkout_shipping_draft', JSON.stringify(draft));
+      } catch {
+        // sessionStorage unavailable — proceed without saving
+      }
+
       if (data.checkout_url) {
-        // Online payment — redirect to PayMongo gateway (same tab)
-        // PayMongo will redirect back to success_url or cancel_url
+        // Online payment — redirect to PayMongo; draft will be restored on cancel/retry
         window.location.href = data.checkout_url;
-        return;
       } else {
-        // COD — redirect directly to success
+        // COD — order is confirmed, clear the draft immediately
+        try {
+          sessionStorage.removeItem('checkout_shipping_draft');
+        } catch {
+          // ignore
+        }
         window.location.href = data.redirect_url || '/checkout/success';
       }
     } catch (err: any) {
