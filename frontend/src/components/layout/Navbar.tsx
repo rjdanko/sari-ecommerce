@@ -131,7 +131,7 @@ function NavbarInner() {
                     </Link>
                   )}
                   {hasRole('admin') && (
-                    <Link href="/admin/dashboard" className="flex items-center px-4 py-2.5 text-sm text-red-700 hover:bg-red-50 font-medium transition-colors">
+                    <Link href="/admin/dashboard" className="flex items-center px-4 py-2.5 text-sm text-sari-700 hover:bg-sari-50 font-medium transition-colors">
                       Admin Panel
                     </Link>
                   )}
