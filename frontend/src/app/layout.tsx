@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import Footer from "@/components/layout/Footer";
+import Navbar from "@/components/layout/Navbar";
 import Providers from "@/components/Providers";
 import "./globals.css";
 
@@ -30,6 +31,7 @@ export default function RootLayout({
     <html lang="en" className={`${montserrat.className} ${montserrat.variable}`}>
       <body className="flex flex-col min-h-screen">
         <Providers>
+          <Navbar />
           <div className="flex-1">{children}</div>
           <Footer />
         </Providers>

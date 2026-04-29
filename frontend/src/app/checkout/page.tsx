@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import Navbar from '@/components/layout/Navbar';
 import { useCartContext } from '@/contexts/CartContext';
 import { useToast } from '@/contexts/ToastContext';
 import { cn, formatPrice } from '@/lib/utils';
@@ -32,7 +31,6 @@ export default function CheckoutPage() {
   return (
     <Suspense fallback={
       <>
-        <Navbar />
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <Loader2 className="w-8 h-8 text-sari-500 animate-spin" />
         </div>
@@ -287,7 +285,6 @@ function CheckoutContent() {
   if (cartLoading || directLoading) {
     return (
       <>
-        <Navbar />
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <Loader2 className="w-8 h-8 text-sari-500 animate-spin" />
         </div>
@@ -298,7 +295,6 @@ function CheckoutContent() {
   if (displayItems.length === 0) {
     return (
       <>
-        <Navbar />
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
           <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-5">
             <ShoppingBag className="w-8 h-8 text-gray-300" />
@@ -318,7 +314,6 @@ function CheckoutContent() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
         {/* Page Header */}
         <div className="relative overflow-hidden bg-gradient-to-r from-sari-50 via-white to-sari-50 border-b border-gray-100">

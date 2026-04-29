@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Navbar from '@/components/layout/Navbar';
 import { useCartContext } from '@/contexts/CartContext';
 import { useToast } from '@/contexts/ToastContext';
 import { formatPrice } from '@/lib/utils';
@@ -170,7 +169,6 @@ export default function CartPage() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
         {/* Page header */}
         <div className="relative overflow-hidden bg-gradient-to-r from-sari-50 via-white to-sari-50 border-b border-gray-100">

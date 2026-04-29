@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Navbar from '@/components/layout/Navbar';
 import ProductCard from '@/components/ProductCard';
 import { MapPin, Phone, Store, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
@@ -36,7 +35,6 @@ export default function StorePublicPage() {
   if (loading) {
     return (
       <>
-        <Navbar />
         <div className="flex min-h-[60vh] items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-sari-500" />
         </div>
@@ -47,7 +45,6 @@ export default function StorePublicPage() {
   if (error || !store) {
     return (
       <>
-        <Navbar />
         <div className="flex min-h-[60vh] flex-col items-center justify-center text-center px-4">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100">
             <Store className="h-8 w-8 text-gray-300" />
@@ -69,7 +66,6 @@ export default function StorePublicPage() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
         {/* Banner */}
         <div className="relative h-48 sm:h-64 lg:h-72 overflow-hidden">

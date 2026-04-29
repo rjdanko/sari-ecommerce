@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import Navbar from '@/components/layout/Navbar';
 import ProductCard from '@/components/ProductCard';
 import type { VariantModalPayload } from '@/components/ProductCard';
 import VariantSelectorModal from '@/components/cart/VariantSelectorModal';
@@ -23,9 +22,11 @@ export default function WishlistPage() {
     try {
       const { data } = await api.get('/api/wishlist');
       const raw = data.data ?? data;
-      // API returns Wishlist models with nested product — extract the products
+      // API returns Wishlist models with nested product — skip entries where product was deleted
       setItems(
-        (Array.isArray(raw) ? raw : []).map((item: any) => item.product ?? item).filter(Boolean)
+        (Array.isArray(raw) ? raw : [])
+          .filter((item: any) => item.product != null)
+          .map((item: any) => item.product)
       );
     } catch {
       // not logged in or empty
@@ -55,7 +56,6 @@ export default function WishlistPage() {
 
   return (
     <>
-      <Navbar />
       {variantModal && (
         <VariantSelectorModal
           isOpen={!!variantModal}
@@ -128,7 +128,7 @@ export default function WishlistPage() {
                     className="relative animate-fade-in"
                     style={{ animationDelay: `${i * 50}ms` }}
                   >
-                    <ProductCard product={product} onOpenVariantModal={setVariantModal} />
+                    <ProductCard product={product} onOpenVariantModal={setVariantModal} hideWishlistButton />
                     <button
                       onClick={() => removeFromWishlist(product.id)}
                       className="absolute top-3 right-3 z-20 p-2 rounded-full bg-red-50 text-red-500 shadow-md hover:bg-red-100 transition-colors duration-200"

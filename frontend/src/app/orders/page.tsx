@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Package, ShoppingBag, XCircle } from 'lucide-react';
-import Navbar from '@/components/layout/Navbar';
 import CancelOrderModal from '@/components/orders/CancelOrderModal';
 import api from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -113,7 +112,6 @@ export default function OrdersPage() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
         {/* Page header */}
         <div className="relative overflow-hidden bg-gradient-to-r from-sari-50 via-white to-sari-50 border-b border-gray-100">

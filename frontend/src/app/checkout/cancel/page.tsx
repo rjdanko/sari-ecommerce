@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import Navbar from '@/components/layout/Navbar';
 import { XCircle, ShoppingCart, ArrowLeft, RefreshCw, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -11,7 +10,6 @@ export default function CheckoutCancelPage() {
   return (
     <Suspense fallback={
       <>
-        <Navbar />
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <Loader2 className="w-8 h-8 text-sari-500 animate-spin" />
         </div>
@@ -39,7 +37,6 @@ function CancelContent() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white flex flex-col items-center justify-center text-center px-4">
         <div className="relative mb-8">
           <div className="absolute inset-0 scale-[2] bg-gradient-to-b from-red-100/30 to-transparent rounded-full blur-2xl" />

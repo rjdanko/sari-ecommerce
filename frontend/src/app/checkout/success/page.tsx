@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Navbar from '@/components/layout/Navbar';
 import ProductCard from '@/components/ProductCard';
 import api from '@/lib/api';
 import type { Product } from '@/types/product';
@@ -33,7 +32,6 @@ export default function CheckoutSuccessPage() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
         {/* Hero section */}
         <div className="flex flex-col items-center justify-center text-center px-4 pt-16 pb-12 sm:pt-24 sm:pb-16">

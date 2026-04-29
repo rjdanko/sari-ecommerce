@@ -45,7 +45,14 @@ export default function AdminOrdersPage() {
     if (search) params.search = search;
     if (status) params.status = status;
     api.get('/api/admin/orders', { params })
-      .then(r => setResult(r.data))
+      .then(r => {
+        const d = r.data;
+        if (Array.isArray(d)) {
+          setResult({ data: d, current_page: 1, last_page: 1, total: d.length });
+        } else {
+          setResult({ ...d, data: Array.isArray(d.data) ? d.data : [] });
+        }
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [search, status, page]);
@@ -96,9 +103,9 @@ export default function AdminOrdersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {result?.data.length === 0 ? (
+              {(result?.data ?? []).length === 0 ? (
                 <tr><td colSpan={7} className="px-5 py-10 text-center text-sm text-gray-400">No orders found.</td></tr>
-              ) : result?.data.map(o => (
+              ) : (result?.data ?? []).map(o => (
                 <tr key={o.id} className="hover:bg-gray-50/60 transition-colors">
                   <td className="px-5 py-3 font-mono text-sm font-medium text-gray-900">{o.order_number}</td>
                   <td className="px-5 py-3 text-gray-600">{o.user ? `${o.user.first_name} ${o.user.last_name}` : '—'}</td>

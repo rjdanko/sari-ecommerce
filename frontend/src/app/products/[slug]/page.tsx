@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Navbar from '@/components/layout/Navbar';
 import ProductCard from '@/components/ProductCard';
 import { cn, formatPrice } from '@/lib/utils';
 import api from '@/lib/api';
@@ -208,7 +207,6 @@ export default function ProductDetailPage() {
   if (loading) {
     return (
       <>
-        <Navbar />
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <Loader2 className="w-8 h-8 text-sari-500 animate-spin" />
         </div>
@@ -219,7 +217,6 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <>
-        <Navbar />
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
           <h2 className="font-display text-2xl text-gray-900 mb-2">Product Not Found</h2>
           <p className="text-gray-500 mb-6">The product you&apos;re looking for doesn&apos;t exist.</p>
@@ -236,7 +233,6 @@ export default function ProductDetailPage() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
         {/* Breadcrumb */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">

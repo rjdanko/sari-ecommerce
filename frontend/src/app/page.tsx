@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Sparkles } from 'lucide-react';
-import Navbar from '@/components/layout/Navbar';
 import HomeRecommendations from '@/components/HomeRecommendations';
 import VoucherBanner from '@/components/VoucherBanner';
 
@@ -15,38 +14,65 @@ const categories = [
 export default function HomePage() {
   return (
     <>
-      <Navbar />
       <main>
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-gradient-to-br from-sari-400 via-sari-500 to-sari-700">
-          {/* Geometric mosaic pattern */}
-          <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
-            <div className="absolute top-4 right-8 w-48 h-32 rounded-2xl bg-sari-300/40" />
-            <div className="absolute top-0 right-48 w-24 h-24 rounded-xl bg-sari-600/30" />
-            <div className="absolute top-8 right-20 w-32 h-48 rounded-2xl bg-sari-500/25" />
-            <div className="absolute top-32 right-4 w-40 h-28 rounded-xl bg-sari-700/20" />
-            <div className="absolute top-16 right-64 w-20 h-36 rounded-2xl bg-sari-400/35" />
-            <div className="absolute bottom-0 right-12 w-56 h-24 rounded-2xl bg-sari-600/25" />
-            <div className="absolute bottom-8 right-40 w-28 h-32 rounded-xl bg-sari-300/30" />
-            <div className="absolute bottom-4 right-72 w-20 h-20 rounded-xl bg-sari-500/20" />
-            <div className="absolute top-0 right-96 w-16 h-40 rounded-2xl bg-sari-400/25" />
-            <div className="absolute bottom-0 right-96 w-36 h-20 rounded-xl bg-sari-700/15" />
+          {/* Woven mosaic — flush grid, no gaps, no overlaps. Each row = 100% width, each col exact. */}
+          <div className="absolute inset-0 pointer-events-none select-none grid grid-rows-4" style={{gridTemplateRows: '25% 25% 25% 25%'}}>
+            {/* Row 1 — 7 cols: 15+12+14+13+16+14+16 = 100 */}
+            <div className="grid grid-cols-[15%_12%_14%_13%_16%_14%_16%] items-stretch">
+              <div className="bg-sari-300/15" />
+              <div className="bg-sari-600/22" />
+              <div className="bg-sari-400/15" />
+              <div className="bg-sari-700/22" />
+              <div className="bg-sari-300/28" />
+              <div className="bg-sari-600/22" />
+              <div className="bg-sari-500/28" />
+            </div>
+            {/* Row 2 — 6 cols: 18+14+16+15+18+19 = 100 */}
+            <div className="grid grid-cols-[18%_14%_16%_15%_18%_19%] items-stretch">
+              <div className="bg-sari-500/18" />
+              <div className="bg-sari-300/25" />
+              <div className="bg-sari-700/20" />
+              <div className="bg-sari-400/28" />
+              <div className="bg-sari-600/22" />
+              <div className="bg-sari-300/28" />
+            </div>
+            {/* Row 3 — 7 cols: 13+16+12+15+14+16+14 = 100 */}
+            <div className="grid grid-cols-[13%_16%_12%_15%_14%_16%_14%] items-stretch">
+              <div className="bg-sari-600/15" />
+              <div className="bg-sari-400/22" />
+              <div className="bg-sari-300/18" />
+              <div className="bg-sari-700/25" />
+              <div className="bg-sari-500/20" />
+              <div className="bg-sari-300/28" />
+              <div className="bg-sari-600/22" />
+            </div>
+            {/* Row 4 — 6 cols: 16+15+18+14+19+18 = 100 */}
+            <div className="grid grid-cols-[16%_15%_18%_14%_19%_18%] items-stretch">
+              <div className="bg-sari-400/18" />
+              <div className="bg-sari-700/22" />
+              <div className="bg-sari-300/25" />
+              <div className="bg-sari-600/20" />
+              <div className="bg-sari-400/28" />
+              <div className="bg-sari-500/22" />
+            </div>
           </div>
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-            <div className="max-w-2xl animate-slide-up">
-              <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm text-white text-xs font-semibold px-4 py-1.5 rounded-full mb-6 border border-white/10">
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
+            <div className="max-w-2xl animate-slide-up relative z-10">
+              <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm text-white text-xs font-semibold px-4 py-1.5 rounded-full mb-5 border border-white/10">
                 <Sparkles className="w-3.5 h-3.5" />
                 NEW COLLECTION
               </span>
-              <h1 className="font-black text-6xl md:text-7xl lg:text-8xl text-white leading-[1.05] tracking-tight">
+              <h1 className="font-black text-5xl md:text-6xl lg:text-7xl text-white leading-[1.05] tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.18)]">
                 Discover Your Perfect Style
               </h1>
-              <p className="mt-5 text-lg md:text-xl text-white/75 leading-relaxed max-w-lg">
+              <p className="mt-4 text-base md:text-lg text-white/80 leading-relaxed max-w-lg drop-shadow-sm">
                 Explore the latest fashion trends with our AI-powered
                 recommendations and smart comparison tools.
               </p>
-              <div className="mt-10 flex flex-wrap gap-4">
+              <div className="mt-8 flex flex-wrap gap-4">
                 <Link
                   href="/products"
                   className="group bg-white hover:bg-sari-50 text-sari-700 font-medium px-8 py-3.5 rounded-full transition-all duration-200 shadow-lg shadow-white/30 hover:shadow-xl hover:shadow-white/40"

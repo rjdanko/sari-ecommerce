@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import api, { getCsrfCookie } from '@/lib/api';
-import Navbar from '@/components/layout/Navbar';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -36,7 +35,6 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <Navbar />
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-sari-200/30 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-sari-100/40 rounded-full translate-y-1/3 -translate-x-1/4 blur-3xl" />

@@ -39,7 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->booted(function () {
         // Rate limit: Auth endpoints (login/register) — 5 per minute per IP
         RateLimiter::for('auth', function (Request $request) {
-            return Limit::perMinute(5)->by($request->ip());
+            return Limit::perMinute(20)->by($request->ip());
         });
 
         // Rate limit: Public API — 60 per minute per IP

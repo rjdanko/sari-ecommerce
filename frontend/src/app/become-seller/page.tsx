@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import Navbar from '@/components/layout/Navbar';
 import BecomeSellerWizard from '@/components/seller/BecomeSellerWizard';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -25,7 +24,6 @@ export default function BecomeSellerPage() {
   if (loading || !user || hasRole('business') || hasRole('admin')) {
     return (
       <>
-        <Navbar />
         <main className="min-h-screen flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-sari-500" />
         </main>
@@ -35,7 +33,6 @@ export default function BecomeSellerPage() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
         <div className="relative overflow-hidden bg-gradient-to-r from-sari-50 via-white to-sari-50 border-b border-gray-100">
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">

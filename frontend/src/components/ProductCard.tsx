@@ -29,7 +29,9 @@ interface ProductCardProps {
   product: Product;
   onCompareToggle?: (productId: number, checked: boolean) => void;
   isComparing?: boolean;
-  onOpenVariantModal: (payload: VariantModalPayload) => void;
+  onOpenVariantModal?: (payload: VariantModalPayload) => void;
+  initialWishlisted?: boolean;
+  hideWishlistButton?: boolean;
 }
 
 function ProductCard({
@@ -37,10 +39,24 @@ function ProductCard({
   onCompareToggle,
   isComparing = false,
   onOpenVariantModal,
+  initialWishlisted = false,
+  hideWishlistButton = false,
 }: ProductCardProps) {
   const { addToast } = useToast();
-  const [wishlisted, setWishlisted] = useState(false);
+  const [wishlisted, setWishlisted] = useState(initialWishlisted);
   const [loadingVariants, setLoadingVariants] = useState(false);
+
+  const handleWishlistClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const next = !wishlisted;
+    setWishlisted(next);
+    try {
+      await api.post(`/api/wishlist/${product.id}`);
+    } catch {
+      setWishlisted(!next);
+      addToast({ type: 'error', title: 'Wishlist error', message: 'Could not update wishlist. Please try again.' });
+    }
+  };
 
   const hasRealImage = !!product.primary_image?.url;
   const primaryUrl = product.primary_image?.url ?? null;
@@ -88,7 +104,7 @@ function ProductCard({
       const productVariants: ProductVariant[] = data.variants ?? [];
       const activeVariants = productVariants.filter((v) => v.is_active && v.stock_quantity > 0);
 
-      onOpenVariantModal({
+      onOpenVariantModal?.({
         productId: product.id,
         productName: product.name,
         productImage: primaryUrl ?? proxyUrl,
@@ -176,20 +192,22 @@ function ProductCard({
         </label>
 
         {/* Heart icon — top right */}
-        <button
-          onClick={() => setWishlisted(!wishlisted)}
-          className={cn(
-            'absolute top-3 right-3 z-10 p-2 rounded-full transition-all duration-200',
-            wishlisted
-              ? 'bg-red-50 text-red-500 shadow-md'
-              : 'bg-white/85 backdrop-blur-sm text-gray-400 hover:text-red-400 hover:bg-white hover:shadow-md',
-          )}
-          aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-        >
-          <Heart
-            className={cn('w-4 h-4 transition-transform duration-200', wishlisted && 'fill-current scale-110')}
-          />
-        </button>
+        {!hideWishlistButton && (
+          <button
+            onClick={handleWishlistClick}
+            className={cn(
+              'absolute top-3 right-3 z-10 p-2 rounded-full transition-all duration-200',
+              wishlisted
+                ? 'bg-red-50 text-red-500 shadow-md'
+                : 'bg-white/85 backdrop-blur-sm text-gray-400 hover:text-red-400 hover:bg-white hover:shadow-md',
+            )}
+            aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+          >
+            <Heart
+              className={cn('w-4 h-4 transition-transform duration-200', wishlisted && 'fill-current scale-110')}
+            />
+          </button>
+        )}
 
         {/* Discount badge */}
         {discount && (

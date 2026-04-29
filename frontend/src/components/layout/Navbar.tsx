@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Suspense, useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useCartContext } from '@/contexts/CartContext';
 import { Heart, ShoppingCart, Search, Menu, X } from 'lucide-react';
@@ -17,6 +17,7 @@ export default function Navbar() {
 }
 
 function NavbarInner() {
+  const pathname = usePathname();
   const { user, loading, logout, hasRole } = useAuth();
   const { cart } = useCartContext();
   const itemCount = cart.item_count || cart.items.length;
@@ -28,6 +29,8 @@ function NavbarInner() {
   useEffect(() => {
     setSearchQuery(searchParams.get('q') || '');
   }, [searchParams]);
+
+  if (pathname.startsWith('/admin') || pathname.startsWith('/business')) return null;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

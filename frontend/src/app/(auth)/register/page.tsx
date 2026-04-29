@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import Navbar from '@/components/layout/Navbar';
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -42,7 +41,6 @@ export default function RegisterPage() {
 
   return (
     <>
-      <Navbar />
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4 py-12 relative overflow-hidden">
         {/* Decorative background */}
         <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-sari-200/25 rounded-full -translate-y-1/3 -translate-x-1/4 blur-3xl" />

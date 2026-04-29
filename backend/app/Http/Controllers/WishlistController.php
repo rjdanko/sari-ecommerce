@@ -16,6 +16,11 @@ class WishlistController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        // Clean up wishlist entries whose product was deleted (no FK cascade on soft-deleted products)
+        Wishlist::where('user_id', $request->user()->id)
+            ->whereDoesntHave('product')
+            ->delete();
+
         $wishlist = Wishlist::where('user_id', $request->user()->id)
             ->with('product.primaryImage', 'product.category')
             ->orderByDesc('created_at')
@@ -23,7 +28,7 @@ class WishlistController extends Controller
 
         $data = $wishlist->getCollection()->map(fn ($item) => [
             'id' => $item->id,
-            'product' => $item->product ? new ProductResource($item->product) : null,
+            'product' => new ProductResource($item->product),
             'created_at' => $item->created_at,
         ]);
 

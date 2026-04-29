@@ -52,7 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (loading || !user || !hasRole('admin')) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <Loader2 className="h-8 w-8 animate-spin text-sari-600" />
       </div>
     );
@@ -66,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const initials = `${user.first_name.charAt(0)}${user.last_name.charAt(0)}`;
 
   return (
-    <div className="flex min-h-screen bg-gray-50/80">
+    <div className="flex min-h-screen bg-[#f8f9fb]">
       {/* Mobile header */}
       <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-gray-200 bg-white px-4 lg:hidden">
         <button

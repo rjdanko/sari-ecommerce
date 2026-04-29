@@ -7,7 +7,6 @@ import Image from 'next/image';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import api, { getCsrfCookie } from '@/lib/api';
-import Navbar from '@/components/layout/Navbar';
 
 export default function LoginPage() {
   return (
@@ -43,8 +42,12 @@ function LoginPageContent() {
           await getCsrfCookie();
           await api.post('/api/auth/google/exchange', { token: googleToken });
           window.location.href = '/';
-        } catch {
-          setError('Google login failed. Please try again.');
+        } catch (err: any) {
+          if (err.response?.status === 403) {
+            setError('Your account has been suspended. Please contact support.');
+          } else {
+            setError('Google login failed. Please try again.');
+          }
           setLoading(false);
         }
       })();
@@ -69,7 +72,6 @@ function LoginPageContent() {
 
   return (
     <>
-      <Navbar />
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4 relative overflow-hidden">
         {/* Decorative background */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-sari-200/30 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl" />

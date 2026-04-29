@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Navbar from '@/components/layout/Navbar';
 import ProductCard from '@/components/ProductCard';
 import type { VariantModalPayload } from '@/components/ProductCard';
 import SidebarFilter from '@/components/SidebarFilter';
@@ -32,7 +31,7 @@ function ProductsPageContent() {
   const [loading, setLoading] = useState(true);
   // Initialize from URL immediately so the first fetch uses the correct category.
   const [activeCategory, setActiveCategory] = useState(() => searchParams.get('category') ?? 'all');
-  const [activeGender, setActiveGender] = useState('');
+  const [activeGender, setActiveGender] = useState(() => searchParams.get('gender') ?? '');
   const [sortBy, setSortBy] = useState('newest');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
   const [compareIds, setCompareIds] = useState<Set<number>>(new Set());
@@ -118,7 +117,6 @@ function ProductsPageContent() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-white">
         {/* Page header */}
         <div className="relative overflow-hidden bg-gradient-to-r from-sari-50 via-white to-sari-50 border-b border-gray-100">

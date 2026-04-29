@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Package, MapPin, CreditCard, Tag } from 'lucide-react';
-import Navbar from '@/components/layout/Navbar';
 import api from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice, cn } from '@/lib/utils';
@@ -64,7 +63,6 @@ export default function OrderDetailPage() {
   if (loading || authLoading) {
     return (
       <>
-        <Navbar />
         <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
           <div className="max-w-4xl mx-auto px-4 py-10 space-y-6 animate-pulse">
             <div className="h-8 w-48 bg-gray-200 rounded" />
@@ -79,7 +77,6 @@ export default function OrderDetailPage() {
   if (notFound || !order) {
     return (
       <>
-        <Navbar />
         <main className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" strokeWidth={1.5} />
@@ -97,7 +94,6 @@ export default function OrderDetailPage() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
         {/* Header */}
         <div className="relative overflow-hidden bg-gradient-to-r from-sari-50 via-white to-sari-50 border-b border-gray-100">

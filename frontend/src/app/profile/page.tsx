@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Navbar from '@/components/layout/Navbar';
 import { useAuth } from '@/hooks/useAuth';
 import { User, Mail, Phone, MapPin, Pencil, Store, ArrowRight } from 'lucide-react';
 
@@ -57,7 +56,6 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <>
-        <Navbar />
         <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white flex items-center justify-center">
           <p className="text-gray-500 text-lg">Loading...</p>
         </main>
@@ -118,7 +116,6 @@ export default function ProfilePage() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
         {/* Page Header */}
         <div className="relative overflow-hidden bg-gradient-to-r from-sari-50 via-white to-sari-50 border-b border-gray-100">
