@@ -169,7 +169,7 @@ export default function CartPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
+      <main className="min-h-screen bg-white">
         {/* Page header */}
         <div className="relative overflow-hidden bg-gradient-to-r from-sari-50 via-white to-sari-50 border-b border-gray-100">
           <div
