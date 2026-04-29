@@ -27,6 +27,16 @@ import type { ApplyVoucherResponse } from '@/types/voucher';
 
 type PaymentMethod = 'cod' | 'qrph' | 'card';
 
+type ShippingForm = {
+  fullName: string;
+  phone: string;
+  address1: string;
+  address2: string;
+  city: string;
+  province: string;
+  zip: string;
+};
+
 export default function CheckoutPage() {
   return (
     <Suspense fallback={
@@ -51,7 +61,20 @@ function CheckoutContent() {
 
   const { cart, loading: cartLoading, fetchCart, updateQuantity, removeItem } = useCartContext();
   const { addToast } = useToast();
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(() => {
+    if (typeof window === 'undefined') return 'cod';
+    try {
+      const raw = sessionStorage.getItem('checkout_shipping_draft');
+      if (!raw) return 'cod';
+      const draft = JSON.parse(raw);
+      if (draft?.paymentMethod === 'qrph' || draft?.paymentMethod === 'card' || draft?.paymentMethod === 'cod') {
+        return draft.paymentMethod as PaymentMethod;
+      }
+    } catch {
+      // ignore
+    }
+    return 'cod';
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [directProduct, setDirectProduct] = useState<any>(null);
@@ -64,14 +87,20 @@ function CheckoutContent() {
   const [applyingVoucher, setApplyingVoucher] = useState(false);
   const [voucherError, setVoucherError] = useState('');
   const { applyVoucher, claimedVouchers, fetchMyClaimed } = useVouchers();
-  const [form, setForm] = useState({
-    fullName: '',
-    phone: '',
-    address1: '',
-    address2: '',
-    city: '',
-    province: '',
-    zip: '',
+  const [form, setForm] = useState<ShippingForm>(() => {
+    const initial: ShippingForm = { fullName: '', phone: '', address1: '', address2: '', city: '', province: '', zip: '' };
+    if (typeof window === 'undefined') return initial;
+    try {
+      const raw = sessionStorage.getItem('checkout_shipping_draft');
+      if (!raw) return initial;
+      const draft = JSON.parse(raw);
+      if (draft?.form && typeof draft.form === 'object') {
+        return { ...initial, ...draft.form };
+      }
+    } catch {
+      // ignore
+    }
+    return initial;
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -107,22 +136,6 @@ function CheckoutContent() {
     }
   }, [isDirect, directSlug, directProductId, fetchCart]);
 
-  // Restore shipping draft saved before payment redirect
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem('checkout_shipping_draft');
-      if (!raw) return;
-      const draft = JSON.parse(raw) as {
-        form: typeof form;
-        paymentMethod: PaymentMethod;
-      };
-      if (draft.form) setForm(draft.form);
-      if (draft.paymentMethod) setPaymentMethod(draft.paymentMethod);
-    } catch {
-      // Ignore malformed draft
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   // Build display items — either direct product or cart items
   const directVariant = isDirect && directProduct && directVariantId
     ? directProduct.variants?.find((v: any) => v.id === parseInt(directVariantId))
@@ -155,7 +168,7 @@ function CheckoutContent() {
   const effectiveShipping = appliedVoucher?.free_shipping ? 0 : (deliveryFee ?? 0);
   const total = subtotal + effectiveShipping - discount;
 
-  const updateForm = (field: keyof typeof form, value: string) => {
+  const updateForm = (field: keyof ShippingForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (formErrors[field]) {
       setFormErrors((prev) => {
