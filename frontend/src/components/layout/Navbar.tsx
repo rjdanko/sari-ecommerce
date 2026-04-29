@@ -41,13 +41,13 @@ function NavbarInner() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center group">
+          <Link href="/" className="flex items-center">
             <Image
               src="/Sari_Logo.png"
               alt="SARI"
               width={180}
               height={60}
-              className="h-16 w-auto group-hover:scale-105 transition-transform duration-200"
+              className="h-16 w-auto"
               priority
             />
           </Link>
@@ -56,8 +56,8 @@ function NavbarInner() {
           <div className="hidden md:flex items-center gap-8">
             {[
               { href: '/', label: 'Home' },
-              { href: '/products?category=men', label: 'Men' },
-              { href: '/products?category=women', label: 'Women' },
+              { href: '/products?gender=men', label: 'Men' },
+              { href: '/products?gender=women', label: 'Women' },
               { href: '/products', label: 'All Products' },
             ].map(({ href, label }) => (
               <Link
@@ -152,7 +152,7 @@ function NavbarInner() {
             ) : (
               <Link
                 href="/login"
-                className="bg-gradient-to-r from-sari-500 to-sari-600 hover:from-sari-600 hover:to-sari-700 text-white text-sm font-medium px-5 py-2 rounded-full shadow-sm hover:shadow-md transition-all duration-200"
+                className="bg-amber-400 hover:bg-amber-500 text-gray-900 text-sm font-medium px-5 py-2 rounded-full shadow-sm hover:shadow-md transition-all duration-200"
               >
                 Login
               </Link>
