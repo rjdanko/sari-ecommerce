@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { Sparkles } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import HomeRecommendations from '@/components/HomeRecommendations';
 import VoucherBanner from '@/components/VoucherBanner';
@@ -18,17 +19,27 @@ export default function HomePage() {
       <main>
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-gradient-to-br from-sari-400 via-sari-500 to-sari-700">
-          {/* Decorative background elements */}
-          <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} />
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-sari-900/10 rounded-full translate-y-1/3 -translate-x-1/4 blur-3xl" />
+          {/* Geometric mosaic pattern */}
+          <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
+            <div className="absolute top-4 right-8 w-48 h-32 rounded-2xl bg-sari-300/40" />
+            <div className="absolute top-0 right-48 w-24 h-24 rounded-xl bg-sari-600/30" />
+            <div className="absolute top-8 right-20 w-32 h-48 rounded-2xl bg-sari-500/25" />
+            <div className="absolute top-32 right-4 w-40 h-28 rounded-xl bg-sari-700/20" />
+            <div className="absolute top-16 right-64 w-20 h-36 rounded-2xl bg-sari-400/35" />
+            <div className="absolute bottom-0 right-12 w-56 h-24 rounded-2xl bg-sari-600/25" />
+            <div className="absolute bottom-8 right-40 w-28 h-32 rounded-xl bg-sari-300/30" />
+            <div className="absolute bottom-4 right-72 w-20 h-20 rounded-xl bg-sari-500/20" />
+            <div className="absolute top-0 right-96 w-16 h-40 rounded-2xl bg-sari-400/25" />
+            <div className="absolute bottom-0 right-96 w-36 h-20 rounded-xl bg-sari-700/15" />
+          </div>
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
             <div className="max-w-2xl animate-slide-up">
               <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm text-white text-xs font-semibold px-4 py-1.5 rounded-full mb-6 border border-white/10">
+                <Sparkles className="w-3.5 h-3.5" />
                 NEW COLLECTION
               </span>
-              <h1 className="font-display text-5xl md:text-6xl lg:text-7xl text-white leading-[1.1] tracking-tight">
+              <h1 className="font-black text-6xl md:text-7xl lg:text-8xl text-white leading-[1.05] tracking-tight">
                 Discover Your Perfect Style
               </h1>
               <p className="mt-5 text-lg md:text-xl text-white/75 leading-relaxed max-w-lg">
@@ -38,7 +49,7 @@ export default function HomePage() {
               <div className="mt-10 flex flex-wrap gap-4">
                 <Link
                   href="/products"
-                  className="group bg-gray-900 hover:bg-gray-800 text-white font-medium px-8 py-3.5 rounded-full transition-all duration-200 shadow-lg shadow-gray-900/30 hover:shadow-xl hover:shadow-gray-900/40"
+                  className="group bg-white hover:bg-sari-50 text-sari-700 font-medium px-8 py-3.5 rounded-full transition-all duration-200 shadow-lg shadow-white/30 hover:shadow-xl hover:shadow-white/40"
                 >
                   Shop Now
                   <span className="inline-block ml-1.5 transition-transform duration-200 group-hover:translate-x-0.5">&rarr;</span>
