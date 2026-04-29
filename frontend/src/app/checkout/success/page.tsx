@@ -30,6 +30,16 @@ export default function CheckoutSuccessPage() {
     fetchRecommendations();
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem('checkout_shipping_draft');
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
   return (
     <>
       <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
