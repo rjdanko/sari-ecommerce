@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Store, Package, ShoppingCart, DollarSign, Loader2 } from 'lucide-react';
+import { Users, Store, Package, ShoppingCart, Banknote, Loader2 } from 'lucide-react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -36,7 +36,7 @@ const tiles = [
   { key: 'stores' as const, label: 'Total Stores', icon: Store, color: 'from-violet-500 to-violet-600' },
   { key: 'products' as const, label: 'Active Products', icon: Package, color: 'from-emerald-500 to-emerald-600' },
   { key: 'orders' as const, label: 'Total Orders', icon: ShoppingCart, color: 'from-amber-500 to-amber-600' },
-  { key: 'revenue' as const, label: 'Total Revenue', icon: DollarSign, color: 'from-sari-600 to-sari-700', isCurrency: true },
+  { key: 'revenue' as const, label: 'Total Revenue', icon: Banknote, color: 'from-sari-600 to-sari-700', isCurrency: true },
 ];
 
 export default function AdminDashboardPage() {
