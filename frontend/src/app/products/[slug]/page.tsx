@@ -43,6 +43,13 @@ interface ProductDetail extends Product {
   variants?: ProductVariant[];
 }
 
+interface UserReview {
+  id: number;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+}
+
 export default function ProductDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -56,7 +63,7 @@ export default function ProductDetailPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [canReview, setCanReview] = useState(false);
-  const [userReview, setUserReview] = useState<any>(null);
+  const [userReview, setUserReview] = useState<UserReview | null>(null);
   const { addItem } = useCartContext();
   const { addToast } = useToast();
   const { user } = useAuth();
@@ -207,7 +214,7 @@ export default function ProductDetailPage() {
   if (loading) {
     return (
       <>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-screen flex items-center justify-center bg-[#f8f9fb]">
           <Loader2 className="w-8 h-8 text-sari-500 animate-spin" />
         </div>
       </>
@@ -217,7 +224,7 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <>
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8f9fb]">
           <h2 className="font-display text-2xl text-gray-900 mb-2">Product Not Found</h2>
           <p className="text-gray-500 mb-6">The product you&apos;re looking for doesn&apos;t exist.</p>
           <Link
@@ -233,7 +240,7 @@ export default function ProductDetailPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-gradient-to-b from-gray-50/80 to-white">
+      <main className="min-h-screen bg-[#f8f9fb]">
         {/* Breadcrumb */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
           <nav className="flex items-center gap-1.5 text-sm text-gray-400">
@@ -465,7 +472,7 @@ export default function ProductDetailPage() {
                 ].map(({ icon: Icon, label, sub }) => (
                   <div
                     key={label}
-                    className="flex flex-col items-center text-center p-3 rounded-xl bg-gray-50 border border-gray-100"
+                    className="flex flex-col items-center text-center p-3 rounded-xl bg-white border border-gray-100"
                   >
                     <Icon className="w-5 h-5 text-sari-500 mb-1.5" strokeWidth={1.8} />
                     <span className="text-xs font-medium text-gray-700">{label}</span>
@@ -489,7 +496,7 @@ export default function ProductDetailPage() {
                       key={label}
                       className={cn(
                         'flex items-center px-4 py-3 text-sm',
-                        i % 2 === 0 ? 'bg-gray-50/50' : 'bg-white',
+                        i % 2 === 0 ? 'bg-[#f8f9fb]' : 'bg-white',
                       )}
                     >
                       <span className="w-28 text-gray-500 font-medium">{label}</span>
@@ -567,7 +574,7 @@ export default function ProductDetailPage() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-gray-50/50 rounded-xl border border-gray-100">
+            <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
               <Star className="w-8 h-8 text-gray-200 mx-auto mb-3" />
               <p className="text-sm text-gray-500">No reviews yet. Be the first to review this product!</p>
             </div>
